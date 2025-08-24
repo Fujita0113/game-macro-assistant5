@@ -106,6 +106,8 @@ class InputCaptureManager:
         try:
             if hasattr(key, 'char') and key.char is not None:
                 char = key.char
+            elif key == keyboard.Key.space:
+                char = ' '
         except AttributeError:
             pass
         
@@ -132,6 +134,8 @@ class InputCaptureManager:
         try:
             if hasattr(key, 'char') and key.char is not None:
                 char = key.char
+            elif key == keyboard.Key.space:
+                char = ' '
         except AttributeError:
             pass
         
