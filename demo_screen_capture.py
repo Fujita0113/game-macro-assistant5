@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-スクリーンキャプチャシステムのデモ・テストスクリプト
+Screen Capture System Demo and Test Script
 
-使用方法:
-1. python demo_screen_capture.py - 基本テスト
-2. python demo_screen_capture.py --manual - 手動テスト
-3. python demo_screen_capture.py --fullscreen - フルスクリーンテスト
+Usage:
+1. python demo_screen_capture.py - Basic tests
+2. python demo_screen_capture.py --manual - Manual test mode
+3. python demo_screen_capture.py --fullscreen - Fullscreen test mode
 """
 
 import sys
@@ -189,7 +190,7 @@ def main():
     
     args = parser.parse_args()
     
-    print("🖥️  GameMacroAssistant - スクリーンキャプチャシステムテスト")
+    print("GameMacroAssistant - Screen Capture System Test")
     print("=" * 60)
     
     if args.manual:
