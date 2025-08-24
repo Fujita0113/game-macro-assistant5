@@ -1,0 +1,11 @@
+# Core dependencies
+pynput>=1.7.0          # For global input capture
+pillow>=10.0.0         # For screenshot and image processing
+cryptography>=41.0.0   # For macro file encryption
+tkinter                # For GUI (built-in with Python)
+
+# Development dependencies
+pytest>=7.0.0          # For testing
+pytest-cov>=4.0.0     # For test coverage
+black>=23.0.0          # For code formatting
+flake8>=6.0.0          # For linting

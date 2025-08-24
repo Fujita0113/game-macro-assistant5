@@ -1,0 +1,1 @@
+# GameMacroAssistant Package
