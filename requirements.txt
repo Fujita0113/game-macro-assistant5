@@ -2,7 +2,7 @@
 pynput>=1.7.0          # For global input capture
 pillow>=10.0.0         # For screenshot and image processing
 cryptography>=41.0.0   # For macro file encryption
-tkinter                # For GUI (built-in with Python)
+pywin32>=306           # For Windows API access (GDI fallback)
 
 # Development dependencies
 pytest>=7.0.0          # For testing
