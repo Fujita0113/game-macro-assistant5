@@ -2,7 +2,9 @@
 pynput>=1.7.0          # For global input capture
 pillow>=10.0.0         # For screenshot and image processing
 cryptography>=41.0.0   # For macro file encryption
-tkinter                # For GUI (built-in with Python)
+mouse>=0.7.0           # For mouse event capture (temporary mock)
+keyboard>=0.13.0       # For keyboard event capture (temporary mock)
+# tkinter is built-in with Python
 
 # Development dependencies
 pytest>=7.0.0          # For testing
