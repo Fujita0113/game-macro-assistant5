@@ -9,111 +9,14 @@ import time
 import uuid
 import threading
 from typing import Optional, Callable
-import keyboard
-import mouse
 
 from core.macro_data import (
     MacroRecording, OperationBlock, MouseButton, Position,
     create_mouse_click_operation, create_key_operation
 )
-
-
-class MockInputCaptureManager:
-    """
-    Placeholder implementation for InputCaptureManager.
-    
-    This will be replaced with the actual implementation from Issue #1.
-    """
-    
-    def __init__(self):
-        self.is_capturing = False
-        self.on_mouse_event: Optional[Callable] = None
-        self.on_key_event: Optional[Callable] = None
-        self._hooks = []
-    
-    def start_capture(self):
-        """Start capturing input events."""
-        if self.is_capturing:
-            return
-        
-        self.is_capturing = True
-        
-        # Hook mouse events
-        mouse.on_click(self._on_mouse_click)
-        
-        # Hook keyboard events (excluding ESC)
-        keyboard.on_press(self._on_key_press)
-        
-        print("Input capture started (Mock implementation)")
-    
-    def stop_capture(self):
-        """Stop capturing input events."""
-        if not self.is_capturing:
-            return
-        
-        self.is_capturing = False
-        
-        # Unhook all events
-        try:
-            mouse.unhook_all()
-            keyboard.unhook_all()
-        except:
-            pass
-        
-        print("Input capture stopped")
-    
-    def _on_mouse_click(self):
-        """Handle mouse click events."""
-        if not self.is_capturing or not self.on_mouse_event:
-            return
-        
-        try:
-            pos = mouse.get_position()
-            button = MouseButton.LEFT  # Simplified for mock
-            position = Position(x=pos[0], y=pos[1])
-            self.on_mouse_event(button, position)
-        except Exception as e:
-            print(f"Error handling mouse click: {e}")
-    
-    def _on_key_press(self, event):
-        """Handle key press events."""
-        if not self.is_capturing or not self.on_key_event:
-            return
-        
-        # Skip ESC key as it's used for stopping recording
-        if event.name == 'esc':
-            return
-        
-        try:
-            self.on_key_event(event.name, "press")
-        except Exception as e:
-            print(f"Error handling key press: {e}")
-
-
-class MockScreenCaptureManager:
-    """
-    Placeholder implementation for ScreenCaptureManager.
-    
-    This will be replaced with the actual implementation from Issue #2.
-    """
-    
-    def __init__(self):
-        self.is_capturing = False
-    
-    def start_capture(self):
-        """Start screen capture."""
-        self.is_capturing = True
-        print("Screen capture started (Mock implementation)")
-    
-    def stop_capture(self):
-        """Stop screen capture."""
-        self.is_capturing = False
-        print("Screen capture stopped")
-    
-    def capture_region(self, x: int, y: int, width: int, height: int) -> bytes:
-        """Capture a screen region."""
-        # Return mock image data
-        return b"mock_screenshot_data"
+from core.input_capture import InputCaptureManager
+from core.screen_capture import ScreenCaptureManager
+from core.events import MouseEvent, KeyboardEvent, EventType
 
 
 class RecordingController:
@@ -121,17 +24,13 @@ class RecordingController:
     
     def __init__(self):
         """Initialize the recording controller."""
-        self.input_capture = MockInputCaptureManager()
-        self.screen_capture = MockScreenCaptureManager()
+        self.input_capture = InputCaptureManager()
+        self.screen_capture = ScreenCaptureManager()
         
         self.current_recording: Optional[MacroRecording] = None
         self.is_recording = False
         self._recording_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
-        
-        # Set up event handlers
-        self.input_capture.on_mouse_event = self._on_mouse_event
-        self.input_capture.on_key_event = self._on_key_event
         
         # UI callback
         self.on_recording_state_changed: Optional[Callable[[bool], None]] = None
@@ -164,14 +63,13 @@ class RecordingController:
             )
             
             # Start capture systems
-            self.input_capture.start_capture()
-            self.screen_capture.start_capture()
+            self.input_capture.start_recording()  # InputCaptureManager uses start_recording()
             
             # Set recording state
             self.is_recording = True
             self._stop_event.clear()
             
-            # Start monitoring thread for ESC key
+            # Start monitoring thread for recording events
             self._recording_thread = threading.Thread(target=self._monitor_recording)
             self._recording_thread.daemon = True
             self._recording_thread.start()
@@ -205,8 +103,7 @@ class RecordingController:
             self._stop_event.set()
             
             # Stop capture systems
-            self.input_capture.stop_capture()
-            self.screen_capture.stop_capture()
+            self.input_capture.stop_recording()  # InputCaptureManager uses stop_recording()
             
             # Wait for monitoring thread to finish
             if self._recording_thread and self._recording_thread.is_alive():
@@ -234,53 +131,71 @@ class RecordingController:
             return None
     
     def _monitor_recording(self):
-        """Monitor for ESC key to stop recording."""
+        """Monitor for recording completion and convert events."""
         try:
-            # Set up ESC key hook
-            keyboard.add_hotkey('esc', self._on_esc_pressed, suppress=False)
-            
             # Keep thread alive until recording stops
             while not self._stop_event.wait(0.1):
                 if not self.is_recording:
                     break
+                
+                # Check if InputCaptureManager has stopped (ESC pressed)
+                if not self.input_capture.is_recording():
+                    print("Recording stopped by ESC key")
+                    self.stop_recording()
+                    break
+                    
+                # Process new events from InputCaptureManager
+                self._process_captured_events()
             
         except Exception as e:
             print(f"Error in recording monitor: {e}")
-        finally:
-            try:
-                keyboard.remove_hotkey('esc')
-            except:
-                pass
     
-    def _on_esc_pressed(self):
-        """Handle ESC key press to stop recording."""
-        if self.is_recording:
-            print("ESC pressed - stopping recording")
-            self.stop_recording()
-    
-    def _on_mouse_event(self, button: MouseButton, position: Position):
-        """Handle mouse events during recording."""
-        if not self.is_recording or not self.current_recording:
+    def _process_captured_events(self):
+        """Process events captured by InputCaptureManager and convert to macro format."""
+        if not self.current_recording:
             return
-        
+            
         try:
-            operation = create_mouse_click_operation(button, position)
-            self.current_recording.add_operation(operation)
-            print(f"Recorded mouse click: {button.value} at ({position.x}, {position.y})")
+            events = self.input_capture.get_recorded_events()
+            
+            # Process new events (skip already processed ones)
+            current_count = len(self.current_recording.operations)
+            new_events = events[current_count:]
+            
+            for event in new_events:
+                operation = self._convert_event_to_operation(event)
+                if operation:
+                    self.current_recording.add_operation(operation)
+                    
         except Exception as e:
-            print(f"Error recording mouse event: {e}")
+            print(f"Error processing captured events: {e}")
     
-    def _on_key_event(self, key: str, action: str):
-        """Handle keyboard events during recording."""
-        if not self.is_recording or not self.current_recording:
-            return
-        
+    def _convert_event_to_operation(self, event) -> Optional[OperationBlock]:
+        """Convert InputCaptureManager event to OperationBlock."""
         try:
-            operation = create_key_operation(key, action)
-            self.current_recording.add_operation(operation)
-            print(f"Recorded key {action}: {key}")
+            if isinstance(event, MouseEvent):
+                # Convert MouseEvent to our format
+                button_mapping = {
+                    'left': MouseButton.LEFT,
+                    'right': MouseButton.RIGHT,
+                    'middle': MouseButton.MIDDLE
+                }
+                
+                button = button_mapping.get(event.button.value.lower(), MouseButton.LEFT)
+                position = Position(x=int(event.x), y=int(event.y))
+                return create_mouse_click_operation(button, position, event.timestamp)
+                
+            elif isinstance(event, KeyboardEvent):
+                # Convert KeyboardEvent to our format
+                action = "press" if event.type == EventType.KEY_PRESS else "release"
+                key = event.key if hasattr(event, 'key') else str(event.char) if hasattr(event, 'char') else 'unknown'
+                return create_key_operation(key, action, [], event.timestamp)
+                
         except Exception as e:
-            print(f"Error recording key event: {e}")
+            print(f"Error converting event to operation: {e}")
+            
+        return None
+    
     
     def _cleanup_recording(self):
         """Clean up recording resources."""

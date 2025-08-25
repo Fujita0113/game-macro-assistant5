@@ -10,7 +10,7 @@ try:
     WIN32_AVAILABLE = True
 except ImportError:
     WIN32_AVAILABLE = False
-from ..utils.logging import log_error
+from utils.logging import log_error
 
 
 class ScreenCaptureManager:
