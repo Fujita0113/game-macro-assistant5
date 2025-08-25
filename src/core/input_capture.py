@@ -1,10 +1,27 @@
 import threading
+import logging
 from datetime import datetime
 from typing import List, Optional
 import pynput
 from pynput import mouse, keyboard
 
 from .events import MouseEvent, KeyboardEvent, EventType, MouseButton, InputEvent
+
+
+class ErrorCodes:
+    """Unified error code definitions for input capture system"""
+    CAPTURE_INIT_FAILED = "Err-CAP-001"
+    CAPTURE_RUNTIME_ERROR = "Err-CAP-002"
+    CAPTURE_PERMISSION_DENIED = "Err-CAP-003"
+    CAPTURE_RESOURCE_UNAVAILABLE = "Err-CAP-004"
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class InputCaptureManager:
@@ -21,23 +38,41 @@ class InputCaptureManager:
             if self._recording:
                 return
             
-            self._recording = True
-            self._recorded_events.clear()
-            
-            print("Recording... Press ESC to stop")
-            
-            # Start mouse listener
-            self._mouse_listener = mouse.Listener(
-                on_click=self._on_mouse_click
-            )
-            self._mouse_listener.start()
-            
-            # Start keyboard listener
-            self._keyboard_listener = keyboard.Listener(
-                on_press=self._on_key_press,
-                on_release=self._on_key_release
-            )
-            self._keyboard_listener.start()
+            try:
+                self._recording = True
+                self._recorded_events.clear()
+                
+                print("Recording... Press ESC to stop")
+                logger.info("Starting input capture recording session")
+                
+                # Start mouse listener
+                self._mouse_listener = mouse.Listener(
+                    on_click=self._on_mouse_click
+                )
+                self._mouse_listener.start()
+                
+                # Start keyboard listener
+                self._keyboard_listener = keyboard.Listener(
+                    on_press=self._on_key_press,
+                    on_release=self._on_key_release
+                )
+                self._keyboard_listener.start()
+                
+            except PermissionError as e:
+                error_msg = f"{ErrorCodes.CAPTURE_PERMISSION_DENIED}: Permission denied for input capture - {str(e)}"
+                logger.error(error_msg)
+                self._recording = False
+                raise RuntimeError(error_msg) from e
+            except OSError as e:
+                error_msg = f"{ErrorCodes.CAPTURE_RESOURCE_UNAVAILABLE}: System resources unavailable for input capture - {str(e)}"
+                logger.error(error_msg)
+                self._recording = False
+                raise RuntimeError(error_msg) from e
+            except Exception as e:
+                error_msg = f"{ErrorCodes.CAPTURE_INIT_FAILED}: Failed to initialize input capture - {str(e)}"
+                logger.error(error_msg)
+                self._recording = False
+                raise RuntimeError(error_msg) from e
     
     def stop_recording(self) -> None:
         """Stop recording events"""
@@ -68,23 +103,31 @@ class InputCaptureManager:
             return self._recording
     
     def _on_mouse_click(self, x: int, y: int, button: mouse.Button, pressed: bool) -> None:
-        """Handle mouse click events"""
+        """Handle mouse click events for all supported buttons (left, right, middle)"""
         if not self._recording or not pressed:
             return
         
-        mouse_button = self._convert_mouse_button(button)
-        if mouse_button:
-            event = MouseEvent(
-                type=EventType.MOUSE_CLICK,
-                x=x,
-                y=y,
-                button=mouse_button,
-                timestamp=datetime.now()
-            )
-            
-            with self._recording_lock:
-                self._recorded_events.append(event)
-                print(f"Mouse click recorded: {button.name} at ({x}, {y})")
+        try:
+            mouse_button = self._convert_mouse_button(button)
+            if mouse_button:
+                event = MouseEvent(
+                    type=EventType.MOUSE_CLICK,
+                    x=x,
+                    y=y,
+                    button=mouse_button,
+                    timestamp=datetime.now()
+                )
+                
+                with self._recording_lock:
+                    self._recorded_events.append(event)
+                    print(f"Mouse click recorded: {button.name} at ({x}, {y})")
+                    logger.debug(f"Mouse {button.name} click recorded at coordinates ({x}, {y})")
+            else:
+                logger.warning(f"Unknown mouse button received: {button}")
+        except Exception as e:
+            error_msg = f"{ErrorCodes.CAPTURE_RUNTIME_ERROR}: Error processing mouse click - {str(e)}"
+            logger.error(error_msg)
+            print(f"Error recording mouse click: {str(e)}")
     
     def _on_key_press(self, key) -> None:
         """Handle key press events"""

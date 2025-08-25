@@ -1,5 +1,5 @@
 # Core dependencies
-pynput>=1.7.0          # For global input capture
+pynput>=1.7.6          # For global input capture (minimum version for stability)
 pillow>=10.0.0         # For screenshot and image processing
 cryptography>=41.0.0   # For macro file encryption
 tkinter                # For GUI (built-in with Python)
