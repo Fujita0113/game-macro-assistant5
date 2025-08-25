@@ -122,6 +122,15 @@ When a user reports that implementation is completed, follow this standardized w
 
 This workflow ensures consistent project management and maintains clean repository state.
 
+## Definition of Done
+
+あるタスクが完了したと見なされるのは、以下の条件がすべて満たされた場合のみです。
+
+- **全てのテストが成功すること** (例: `pytest`)
+- **Ruffのリンターとフォーマッターがエラーなくパスすること** (例: `ruff check .` および `ruff format . --check`)
+
+これらのコマンドは、すべて終了コード0で完了しなければなりません。コマンド実行中の表示（ドットなど）ではなく、最終的な終了コードのみが成功の証拠となります。
+
 ## Worktree Synchronization Issues
 
 If an agent reports that previous implementations are not visible in their worktree:

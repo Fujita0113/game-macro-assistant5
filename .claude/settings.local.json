@@ -13,7 +13,13 @@
       "Bash(python tests/test_visual_editor_functionality.py)",
       "Bash(python -m pytest tests/test_visual_editor_functionality.py -v)",
       "Bash(python test:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(git branch:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(find:*)",
+      "Bash(python -m pytest tests/test_integration.py --tb=short -v)"
     ],
     "deny": [],
     "ask": []

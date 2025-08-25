@@ -1,0 +1,14 @@
+[tool.ruff]
+# 1行の最大文字数を88文字に設定
+line-length = 88
+
+[tool.ruff.lint]
+# チェックするルールを選択（"E"はpycodestyleのエラー、"F"はPyflakesのエラー）
+select = ["E", "F"]
+
+# 特定のルールを無視する（例：E501はline-lengthで管理するので不要）
+ignore = ["E501"]
+
+[tool.ruff.format]
+# ダブルクォートの代わりにシングルクォートを強制する
+quote-style = "single"

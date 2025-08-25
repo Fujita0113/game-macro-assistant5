@@ -5,15 +5,15 @@ from typing import Optional, Union
 
 
 class EventType(Enum):
-    MOUSE_CLICK = "mouse_click"
-    KEY_PRESS = "key_press"
-    KEY_RELEASE = "key_release"
+    MOUSE_CLICK = 'mouse_click'
+    KEY_PRESS = 'key_press'
+    KEY_RELEASE = 'key_release'
 
 
 class MouseButton(Enum):
-    LEFT = "left"
-    RIGHT = "right"
-    MIDDLE = "middle"
+    LEFT = 'left'
+    RIGHT = 'right'
+    MIDDLE = 'middle'
 
 
 @dataclass
@@ -23,14 +23,14 @@ class MouseEvent:
     y: int
     button: MouseButton
     timestamp: datetime
-    
+
     def to_dict(self):
         return {
-            "type": self.type.value,
-            "x": self.x,
-            "y": self.y,
-            "button": self.button.value,
-            "timestamp": self.timestamp.isoformat()
+            'type': self.type.value,
+            'x': self.x,
+            'y': self.y,
+            'button': self.button.value,
+            'timestamp': self.timestamp.isoformat(),
         }
 
 
@@ -40,13 +40,13 @@ class KeyboardEvent:
     key: str
     timestamp: datetime
     char: Optional[str] = None
-    
+
     def to_dict(self):
         return {
-            "type": self.type.value,
-            "key": self.key,
-            "timestamp": self.timestamp.isoformat(),
-            "char": self.char
+            'type': self.type.value,
+            'key': self.key,
+            'timestamp': self.timestamp.isoformat(),
+            'char': self.char,
         }
 
 
