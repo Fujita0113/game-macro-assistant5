@@ -89,16 +89,13 @@ class TestInputCaptureManager(unittest.TestCase):
         self.assertEqual(mock_keyboard_listener.call_count, 1)
         self.assertTrue(self.manager.is_recording())
     
-    @patch('src.core.input_capture.mouse.Button')
-    def test_mouse_click_recording(self, mock_button):
+    def test_mouse_click_recording(self):
         """Test mouse click event recording"""
-        # Setup
-        mock_button.left = "left"
-        mock_button.left.name = "left"
+        from pynput import mouse
         
         # Simulate mouse click
         with patch.object(self.manager, '_recording', True):
-            self.manager._on_mouse_click(100, 200, mock_button.left, True)
+            self.manager._on_mouse_click(100, 200, mouse.Button.left, True)
         
         # Verify event was recorded
         events = self.manager.get_recorded_events()
@@ -203,6 +200,8 @@ class TestInputCaptureManager(unittest.TestCase):
         # Test with character key
         mock_key_char = Mock()
         mock_key_char.char = 'a'
+        # Remove name attribute to test char path
+        delattr(mock_key_char, 'name')
         result = self.manager._key_to_string(mock_key_char)
         self.assertEqual(result, 'a')
         
@@ -309,6 +308,36 @@ class TestInputCaptureManager(unittest.TestCase):
         # Verify original list is unchanged
         events_again = self.manager.get_recorded_events()
         self.assertEqual(len(events_again), original_length)
+    
+    @patch('src.core.input_capture.mouse.Listener')
+    @patch('src.core.input_capture.keyboard.Listener')
+    @patch('builtins.print')
+    def test_continuous_recording_display(self, mock_print, mock_keyboard_listener, mock_mouse_listener):
+        """Test that 'Recording...' is displayed continuously every second during recording"""
+        import time
+        
+        # Setup mocks
+        mock_mouse_instance = Mock()
+        mock_keyboard_instance = Mock()
+        mock_mouse_listener.return_value = mock_mouse_instance
+        mock_keyboard_listener.return_value = mock_keyboard_instance
+        
+        # Start recording
+        self.manager.start_recording()
+        
+        # Wait for multiple status display cycles
+        time.sleep(2.5)
+        
+        # Stop recording
+        self.manager.stop_recording()
+        
+        # Verify 'Recording...' was printed multiple times (at least 2 times in 2.5 seconds)
+        recording_calls = [call for call in mock_print.call_args_list if 'Recording...' in str(call)]
+        self.assertGreaterEqual(len(recording_calls), 2, "Should print 'Recording...' at least 2 times during 2.5 second recording")
+        
+        # Verify final "Recording stopped" message
+        stop_calls = [call for call in mock_print.call_args_list if 'Recording stopped' in str(call)]
+        self.assertEqual(len(stop_calls), 1, "Should print 'Recording stopped' exactly once")
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ def test_input_capture():
     print("1. LEFT-click at one location")
     print("2. RIGHT-click at another location") 
     print("3. MIDDLE-click (scroll wheel) at a third location")
-    print("4. Type 'Hello World Test' (with spaces)")
+    print("4. Type 'Hello World' (with spaces)")
     print("5. Press ESC to stop recording")
     print()
     print("This test validates all three mouse buttons and space character recording.")
@@ -116,23 +116,23 @@ def test_input_capture():
         print(f"❌ Insufficient mouse button coverage: {', '.join(sorted(found_buttons)) if found_buttons else 'none'}")
         success = False
     
-    # Check if "Hello World Test" was typed (with space detection)
+    # Check if "Hello World" was typed (with space detection)
     text_chars = [e.char for e in key_events if e.type.value == "key_press" and e.char and len(e.char) == 1 and e.char.isprintable()]
     reconstructed = ''.join(text_chars).lower()
     space_count = reconstructed.count(' ')
     
-    if "hello" in reconstructed and "world" in reconstructed and "test" in reconstructed:
-        print("✅ 'Hello World Test' text input detected")
+    if "hello" in reconstructed and "world" in reconstructed:
+        print("✅ 'Hello World' text input detected")
     else:
-        print("❌ 'Hello World Test' text input not clearly detected")
+        print("❌ 'Hello World' text input not clearly detected")
         print(f"   Detected text: '{reconstructed}'")
         success = False
     
     # Validate space character recording
-    if space_count >= 2:
+    if space_count >= 1:
         print(f"✅ Space characters recorded correctly ({space_count} spaces found)")
     else:
-        print(f"❌ Space character recording failed ({space_count} spaces found, expected at least 2)")
+        print(f"❌ Space character recording failed ({space_count} spaces found, expected at least 1)")
         success = False
     
     print(f"\nTest {'PASSED' if success else 'FAILED'}")

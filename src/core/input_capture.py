@@ -31,6 +31,8 @@ class InputCaptureManager:
         self._mouse_listener: Optional[mouse.Listener] = None
         self._keyboard_listener: Optional[keyboard.Listener] = None
         self._recording_lock = threading.Lock()
+        self._status_thread: Optional[threading.Thread] = None
+        self._stop_status_display = threading.Event()
     
     def start_recording(self) -> None:
         """Start recording mouse and keyboard events"""
@@ -41,8 +43,8 @@ class InputCaptureManager:
             try:
                 self._recording = True
                 self._recorded_events.clear()
+                self._stop_status_display.clear()
                 
-                print("Recording... Press ESC to stop")
                 logger.info("Starting input capture recording session")
                 
                 # Start mouse listener
@@ -58,20 +60,30 @@ class InputCaptureManager:
                 )
                 self._keyboard_listener.start()
                 
+                # Start status display thread
+                self._status_thread = threading.Thread(
+                    target=self._display_recording_status,
+                    daemon=True
+                )
+                self._status_thread.start()
+                
             except PermissionError as e:
                 error_msg = f"{ErrorCodes.CAPTURE_PERMISSION_DENIED}: Permission denied for input capture - {str(e)}"
                 logger.error(error_msg)
                 self._recording = False
+                self._stop_status_display.set()
                 raise RuntimeError(error_msg) from e
             except OSError as e:
                 error_msg = f"{ErrorCodes.CAPTURE_RESOURCE_UNAVAILABLE}: System resources unavailable for input capture - {str(e)}"
                 logger.error(error_msg)
                 self._recording = False
+                self._stop_status_display.set()
                 raise RuntimeError(error_msg) from e
             except Exception as e:
                 error_msg = f"{ErrorCodes.CAPTURE_INIT_FAILED}: Failed to initialize input capture - {str(e)}"
                 logger.error(error_msg)
                 self._recording = False
+                self._stop_status_display.set()
                 raise RuntimeError(error_msg) from e
     
     def stop_recording(self) -> None:
@@ -81,6 +93,12 @@ class InputCaptureManager:
                 return
             
             self._recording = False
+            
+            # Stop status display thread
+            self._stop_status_display.set()
+            if self._status_thread and self._status_thread.is_alive():
+                self._status_thread.join(timeout=2.0)
+            self._status_thread = None
             
             if self._mouse_listener:
                 self._mouse_listener.stop()
@@ -101,6 +119,14 @@ class InputCaptureManager:
         """Check if currently recording"""
         with self._recording_lock:
             return self._recording
+    
+    def _display_recording_status(self) -> None:
+        """Display 'Recording...' message every second while recording"""
+        while not self._stop_status_display.wait(1.0):
+            if self._recording:
+                print("Recording...")
+            else:
+                break
     
     def _on_mouse_click(self, x: int, y: int, button: mouse.Button, pressed: bool) -> None:
         """Handle mouse click events for all supported buttons (left, right, middle)"""
