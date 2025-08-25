@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(gh issue:*)",
+      "Bash(python tests/test_visual_editor_functionality.py)",
+      "Bash(python -m pytest tests/test_visual_editor_functionality.py -v)",
+      "Bash(python test:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

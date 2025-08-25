@@ -69,23 +69,24 @@ def on_macro_changed(macro: MacroRecording):
 
 def main():
     """Main test function."""
-    root = tk.Tk()
-    root.title("ビジュアルエディタテスト")
-    
-    # Create visual editor
-    editor = VisualEditor(root)
-    editor.on_macro_changed = on_macro_changed
-    
-    # Create test macro
-    test_macro = create_test_macro()
-    
-    # Load macro into editor
-    editor.load_macro(test_macro)
-    
-    # Add instructions
-    instructions = tk.Label(
-        root,
-        text="""
+    try:
+        root = tk.Tk()
+        root.title("ビジュアルエディタテスト")
+        
+        # Create visual editor
+        editor = VisualEditor(root)
+        editor.on_macro_changed = on_macro_changed
+        
+        # Create test macro
+        test_macro = create_test_macro()
+        
+        # Load macro into editor
+        editor.load_macro(test_macro)
+        
+        # Add instructions
+        instructions = tk.Label(
+            root,
+            text="""
 テスト手順:
 1. ブロックをマウスでドラッグしてみてください
 2. 異なる位置にドロップしてください
@@ -97,23 +98,33 @@ def main():
 - ドロップ位置に赤い線が表示される
 - ドロップ後に順序が変更される
 - アンドゥ/リドゥが動作する
-        """,
-        justify="left",
-        font=("Arial", 10)
-    )
-    instructions.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
-    
-    print("ビジュアルエディタテストを開始...")
-    print("初期操作順序:")
-    for i, op in enumerate(test_macro.operations):
-        print(f"  {i + 1}. {op.operation_type.value} (ID: {op.id})")
-    print("\nGUIでドラッグ&ドロップをテストしてください。")
-    
-    # Show editor
-    editor.show()
-    
-    # Start main loop
-    root.mainloop()
+            """,
+            justify="left",
+            font=("Arial", 10)
+        )
+        instructions.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+        
+        print("ビジュアルエディタテストを開始...")
+        print("初期操作順序:")
+        for i, op in enumerate(test_macro.operations):
+            print(f"  {i + 1}. {op.operation_type.value} (ID: {op.id})")
+        print("\nGUIでドラッグ&ドロップをテストしてください。")
+        
+        # Show editor
+        editor.show()
+        
+        # タイムアウト対策 - 5分でタイムアウト
+        root.after(300000, root.quit)
+        
+        # Start main loop
+        root.mainloop()
+        
+    except tk.TclError as e:
+        print(f"Tkinter環境エラー: {e}")
+        print("GUI環境が利用できません。")
+    except Exception as e:
+        print(f"テスト実行エラー: {e}")
+        print("Tkinter環境を確認してください")
 
 
 if __name__ == "__main__":

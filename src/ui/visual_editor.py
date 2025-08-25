@@ -217,8 +217,8 @@ class DragDropCanvas(tk.Canvas):
         self._update_indices()
         
         # Notify parent of the change
-        if hasattr(self.master, '_on_blocks_reordered'):
-            self.master._on_blocks_reordered(from_index, to_index)
+        if hasattr(self, '_reorder_callback') and self._reorder_callback:
+            self._reorder_callback(from_index, to_index)
     
     def _redraw_all_blocks(self):
         """Redraw all blocks in their correct positions."""
@@ -365,8 +365,8 @@ class VisualEditor:
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        # Bind canvas events
-        self.canvas.master = self  # Allow canvas to call back to editor
+        # Set up canvas callback
+        self.canvas._reorder_callback = self._on_blocks_reordered
     
     def _setup_keyboard_shortcuts(self):
         """Set up keyboard shortcuts."""

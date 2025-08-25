@@ -94,8 +94,11 @@ class TestDragDropCanvas:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.root = tk.Tk()
-        self.root.withdraw()  # Hide window during tests
+        try:
+            self.root = tk.Tk()
+            self.root.withdraw()  # Hide window during tests
+        except tk.TclError as e:
+            pytest.skip(f"Tkinter not available: {e}")
         self.canvas = DragDropCanvas(self.root)
         self.sample_ops = [
             create_mouse_click_operation(MouseButton.LEFT, Position(10, 20)),
@@ -105,7 +108,11 @@ class TestDragDropCanvas:
     
     def teardown_method(self):
         """Clean up test fixtures."""
-        self.root.destroy()
+        try:
+            if hasattr(self, 'root'):
+                self.root.destroy()
+        except tk.TclError:
+            pass  # Already destroyed or not available
     
     def test_add_block(self):
         """Test adding blocks to canvas."""
@@ -158,8 +165,8 @@ class TestDragDropCanvas:
             self.canvas.add_block(op)
         
         # Mock the callback
-        self.canvas.master = Mock()
-        self.canvas.master._on_blocks_reordered = Mock()
+        callback_mock = Mock()
+        self.canvas._reorder_callback = callback_mock
         
         # Reorder: move first block to last position
         self.canvas._reorder_block(0, 3)  # Move to end
@@ -172,7 +179,7 @@ class TestDragDropCanvas:
         assert ordered_ops[2] == self.sample_ops[0]  # First becomes last
         
         # Check callback was called
-        self.canvas.master._on_blocks_reordered.assert_called_once()
+        self.canvas._reorder_callback.assert_called_once()
     
     def test_block_text_generation(self):
         """Test block text generation for different operation types."""
@@ -195,8 +202,11 @@ class TestVisualEditor:
     
     def setup_method(self):
         """Set up test fixtures."""
-        self.root = tk.Tk()
-        self.root.withdraw()  # Hide window during tests
+        try:
+            self.root = tk.Tk()
+            self.root.withdraw()  # Hide window during tests
+        except tk.TclError as e:
+            pytest.skip(f"Tkinter not available: {e}")
         self.editor = VisualEditor(self.root)
         
         # Create test macro
@@ -212,7 +222,11 @@ class TestVisualEditor:
     
     def teardown_method(self):
         """Clean up test fixtures."""
-        self.root.destroy()
+        try:
+            if hasattr(self, 'root'):
+                self.root.destroy()
+        except tk.TclError:
+            pass  # Already destroyed or not available
     
     def test_load_macro(self):
         """Test loading a macro into the editor."""
