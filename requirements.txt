@@ -1,9 +1,8 @@
 # Core dependencies
-pynput>=1.7.0          # For global input capture
+pynput>=1.7.6          # For global input capture (minimum version for stability)
 pillow>=10.0.0         # For screenshot and image processing
 cryptography>=41.0.0   # For macro file encryption
-mouse>=0.7.0           # For mouse event capture (temporary mock)
-keyboard>=0.13.0       # For keyboard event capture (temporary mock)
+pywin32>=306           # For Windows API access (GDI fallback)
 # tkinter is built-in with Python
 
 # Development dependencies
