@@ -1,0 +1,111 @@
+{
+  "test_metadata": {
+    "description": "Non-interactive test data for integration testing",
+    "version": "1.0",
+    "created": "2024-01-01T00:00:00"
+  },
+  "mouse_events": [
+    {
+      "x": 100,
+      "y": 200,
+      "button": "left",
+      "timestamp": "2024-01-01T00:00:00.000Z",
+      "action": "click"
+    },
+    {
+      "x": 300,
+      "y": 400,
+      "button": "right", 
+      "timestamp": "2024-01-01T00:00:00.500Z",
+      "action": "click"
+    },
+    {
+      "x": 500,
+      "y": 300,
+      "button": "middle",
+      "timestamp": "2024-01-01T00:00:01.000Z",
+      "action": "click"
+    }
+  ],
+  "keyboard_events": [
+    {
+      "key": "H",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:01.500Z",
+      "char": "H"
+    },
+    {
+      "key": "e",
+      "action": "press", 
+      "timestamp": "2024-01-01T00:00:01.600Z",
+      "char": "e"
+    },
+    {
+      "key": "l",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:01.700Z",
+      "char": "l"
+    },
+    {
+      "key": "l",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:01.800Z",
+      "char": "l"
+    },
+    {
+      "key": "o",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:01.900Z",
+      "char": "o"
+    },
+    {
+      "key": "space",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:02.000Z",
+      "char": " "
+    },
+    {
+      "key": "W",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:02.100Z",
+      "char": "W"
+    },
+    {
+      "key": "o",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:02.200Z",
+      "char": "o"
+    },
+    {
+      "key": "r",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:02.300Z",
+      "char": "r"
+    },
+    {
+      "key": "l",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:02.400Z",
+      "char": "l"
+    },
+    {
+      "key": "d",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:02.500Z",
+      "char": "d"
+    },
+    {
+      "key": "esc",
+      "action": "press",
+      "timestamp": "2024-01-01T00:00:03.000Z",
+      "char": null
+    }
+  ],
+  "expected_validation": {
+    "min_mouse_clicks": 3,
+    "expected_buttons": ["left", "right", "middle"],
+    "expected_text": "Hello World",
+    "min_space_count": 1,
+    "should_succeed": true
+  }
+}

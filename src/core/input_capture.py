@@ -1,5 +1,6 @@
 import threading
 import logging
+import json
 from datetime import datetime
 from typing import List, Optional
 from pynput import mouse, keyboard
@@ -232,3 +233,75 @@ class InputCaptureManager:
                 return str(key)
         except AttributeError:
             return str(key)
+
+    def load_test_data(self, file_path: str) -> bool:
+        """Load test data from JSON file for non-interactive testing
+
+        Args:
+            file_path: Path to JSON file containing test event data
+
+        Returns:
+            bool: True if data loaded successfully, False otherwise
+        """
+        try:
+            with open(file_path, 'r') as f:
+                test_data = json.load(f)
+
+            events = []
+
+            # Process mouse events
+            for mouse_event_data in test_data.get('mouse_events', []):
+                try:
+                    button = MouseButton(mouse_event_data['button'])
+                    timestamp = datetime.fromisoformat(
+                        mouse_event_data['timestamp'].replace('Z', '+00:00')
+                    )
+
+                    event = MouseEvent(
+                        type=EventType.MOUSE_CLICK,
+                        x=mouse_event_data['x'],
+                        y=mouse_event_data['y'],
+                        button=button,
+                        timestamp=timestamp,
+                    )
+                    events.append(event)
+                except (KeyError, ValueError) as e:
+                    logger.warning(f'Skipping invalid mouse event: {e}')
+                    continue
+
+            # Process keyboard events
+            for kb_event_data in test_data.get('keyboard_events', []):
+                try:
+                    timestamp = datetime.fromisoformat(
+                        kb_event_data['timestamp'].replace('Z', '+00:00')
+                    )
+
+                    event = KeyboardEvent(
+                        type=EventType.KEY_PRESS,
+                        key=kb_event_data['key'],
+                        timestamp=timestamp,
+                        char=kb_event_data.get('char'),
+                    )
+                    events.append(event)
+
+                    # Stop recording simulation when ESC is encountered
+                    if kb_event_data['key'] == 'esc':
+                        break
+
+                except (KeyError, ValueError) as e:
+                    logger.warning(f'Skipping invalid keyboard event: {e}')
+                    continue
+
+            # Sort events by timestamp
+            events.sort(key=lambda x: x.timestamp)
+
+            # Store the test events
+            with self._recording_lock:
+                self._recorded_events = events
+
+            logger.info(f'Loaded {len(events)} test events from {file_path}')
+            return True
+
+        except (FileNotFoundError, json.JSONDecodeError, Exception) as e:
+            logger.error(f'Failed to load test data from {file_path}: {e}')
+            return False

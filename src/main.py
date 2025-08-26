@@ -107,10 +107,10 @@ def test_input_capture():
 
     # Check mouse click count
     if len(mouse_clicks) < 3:
-        print(f'❌ Expected at least 3 mouse clicks, got {len(mouse_clicks)}')
+        print(f'[FAIL] Expected at least 3 mouse clicks, got {len(mouse_clicks)}')
         success = False
     else:
-        print('✅ Mouse clicks recorded successfully')
+        print('[OK] Mouse clicks recorded successfully')
 
     # Check for all three mouse button types
     button_types = set(event.button.value for event in mouse_clicks)
@@ -118,14 +118,18 @@ def test_input_capture():
     found_buttons = button_types.intersection(expected_buttons)
 
     if len(found_buttons) >= 3:
-        print(f'✅ All mouse button types detected: {", ".join(sorted(found_buttons))}')
+        print(
+            f'[OK] All mouse button types detected: {", ".join(sorted(found_buttons))}'
+        )
     elif len(found_buttons) >= 2:
-        print(f'⚠️  Partial mouse button coverage: {", ".join(sorted(found_buttons))}')
+        print(
+            f'[WARN] Partial mouse button coverage: {", ".join(sorted(found_buttons))}'
+        )
         missing = expected_buttons - found_buttons
         print(f'   Missing: {", ".join(sorted(missing))}')
     else:
         print(
-            f'❌ Insufficient mouse button coverage: {", ".join(sorted(found_buttons)) if found_buttons else "none"}'
+            f'[FAIL] Insufficient mouse button coverage: {", ".join(sorted(found_buttons)) if found_buttons else "none"}'
         )
         success = False
 
@@ -142,18 +146,161 @@ def test_input_capture():
     space_count = reconstructed.count(' ')
 
     if 'hello' in reconstructed and 'world' in reconstructed:
-        print("✅ 'Hello World' text input detected")
+        print("[OK] 'Hello World' text input detected")
     else:
-        print("❌ 'Hello World' text input not clearly detected")
+        print("[FAIL] 'Hello World' text input not clearly detected")
         print(f"   Detected text: '{reconstructed}'")
         success = False
 
     # Validate space character recording
     if space_count >= 1:
-        print(f'✅ Space characters recorded correctly ({space_count} spaces found)')
+        print(f'[OK] Space characters recorded correctly ({space_count} spaces found)')
     else:
         print(
-            f'❌ Space character recording failed ({space_count} spaces found, expected at least 1)'
+            f'[FAIL] Space character recording failed ({space_count} spaces found, expected at least 1)'
+        )
+        success = False
+
+    print(f'\nTest {"PASSED" if success else "FAILED"}')
+    return success
+
+
+def test_input_capture_from_file(file_path: str) -> bool:
+    """Test input capture functionality using data from a JSON file."""
+    print('=== Non-Interactive Input Capture Test ===')
+    print(f'Loading test data from: {file_path}')
+
+    manager = InputCaptureManager()
+
+    # Load test data from file
+    if not manager.load_test_data(file_path):
+        print('[FAIL] Failed to load test data from file')
+        return False
+
+    print('[OK] Test data loaded successfully')
+
+    # Get the loaded events
+    events = manager.get_recorded_events()
+
+    if not events:
+        print('[FAIL] No events were loaded from file!')
+        return False
+
+    # Analyze loaded events (same logic as interactive test)
+    mouse_clicks = [e for e in events if hasattr(e, 'button')]
+    key_events = [e for e in events if hasattr(e, 'key')]
+
+    print(f'Total events loaded: {len(events)}')
+    print(f'Mouse clicks: {len(mouse_clicks)}')
+    print(f'Keyboard events: {len(key_events)}')
+    print()
+
+    # Show mouse click details
+    if mouse_clicks:
+        print('Mouse clicks:')
+        for i, event in enumerate(mouse_clicks, 1):
+            print(
+                f'  {i}. {event.button.value} click at ({event.x}, {event.y}) - {event.timestamp}'
+            )
+
+    # Show keyboard input reconstruction
+    if key_events:
+        print('\nKeyboard input:')
+        text_chars = []
+        for event in key_events:
+            # Only use KEY_PRESS events to avoid duplication
+            if (
+                event.type.value == 'key_press'
+                and event.char
+                and len(event.char) == 1
+                and event.char.isprintable()
+            ):
+                text_chars.append(event.char)
+
+        if text_chars:
+            reconstructed_text = ''.join(text_chars)
+            print(f"  Reconstructed text: '{reconstructed_text}'")
+
+        key_list = [
+            (e.key, e.type.value) for e in key_events[:20]
+        ]  # Show first 20 keys with type
+        print(f'  All key events: {key_list}')
+
+    # Export results to JSON
+    try:
+        export_data = {
+            'test_timestamp': datetime.now().isoformat(),
+            'test_source': 'file_based',
+            'source_file': file_path,
+            'total_events': len(events),
+            'mouse_clicks': len(mouse_clicks),
+            'keyboard_events': len(key_events),
+            'events': [event.to_dict() for event in events],
+        }
+
+        with open('input_capture_test_results.json', 'w') as f:
+            json.dump(export_data, f, indent=2)
+
+        print('\nResults exported to: input_capture_test_results.json')
+    except Exception as e:
+        print(f'Failed to export results: {e}')
+
+    # Validate test requirements (same validation logic)
+    success = True
+
+    # Check mouse click count
+    if len(mouse_clicks) < 3:
+        print(f'[FAIL] Expected at least 3 mouse clicks, got {len(mouse_clicks)}')
+        success = False
+    else:
+        print('[OK] Mouse clicks loaded successfully')
+
+    # Check for all three mouse button types
+    button_types = set(event.button.value for event in mouse_clicks)
+    expected_buttons = {'left', 'right', 'middle'}
+    found_buttons = button_types.intersection(expected_buttons)
+
+    if len(found_buttons) >= 3:
+        print(
+            f'[OK] All mouse button types detected: {", ".join(sorted(found_buttons))}'
+        )
+    elif len(found_buttons) >= 2:
+        print(
+            f'[WARN] Partial mouse button coverage: {", ".join(sorted(found_buttons))}'
+        )
+        missing = expected_buttons - found_buttons
+        print(f'   Missing: {", ".join(sorted(missing))}')
+    else:
+        print(
+            f'[FAIL] Insufficient mouse button coverage: {", ".join(sorted(found_buttons)) if found_buttons else "none"}'
+        )
+        success = False
+
+    # Check if "Hello World" was typed (with space detection)
+    text_chars = [
+        e.char
+        for e in key_events
+        if e.type.value == 'key_press'
+        and e.char
+        and len(e.char) == 1
+        and e.char.isprintable()
+    ]
+    reconstructed = ''.join(text_chars).lower()
+    space_count = reconstructed.count(' ')
+
+    if 'hello' in reconstructed and 'world' in reconstructed:
+        print("[OK] 'Hello World' text input detected")
+    else:
+        print("[FAIL] 'Hello World' text input not clearly detected")
+        print(f"   Detected text: '{reconstructed}'")
+        success = False
+
+    # Validate space character recording
+    if space_count >= 1:
+        print(f'[OK] Space characters loaded correctly ({space_count} spaces found)')
+    else:
+        print(
+            f'[FAIL] Space character loading failed ({space_count} spaces found, expected at least 1)'
         )
         success = False
 
@@ -174,11 +321,20 @@ def main():
     parser.add_argument(
         '--test-input', action='store_true', help='Run input capture integration test'
     )
+    parser.add_argument(
+        '--test-input-file',
+        type=str,
+        help='Run non-interactive input test with data file',
+    )
 
     args = parser.parse_args()
 
     if args.test_input:
         success = test_input_capture()
+        sys.exit(0 if success else 1)
+
+    if args.test_input_file:
+        success = test_input_capture_from_file(args.test_input_file)
         sys.exit(0 if success else 1)
 
     print('GameMacroAssistant - Starting...')

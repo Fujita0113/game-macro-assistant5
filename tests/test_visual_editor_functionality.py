@@ -101,11 +101,25 @@ class TestDragDropCanvas:
 
     def setup_method(self):
         """Set up test fixtures."""
-        try:
-            self.root = tk.Tk()
-            self.root.withdraw()  # Hide window during tests
-        except tk.TclError as e:
-            pytest.skip(f'Tkinter not available: {e}')
+        # Try multiple attempts to create Tk root to handle resource contention
+        max_attempts = 3
+
+        for attempt in range(max_attempts):
+            try:
+                self.root = tk.Tk()
+                self.root.withdraw()  # Hide window during tests
+                break
+            except tk.TclError as e:
+                if attempt < max_attempts - 1:
+                    # Wait a bit and try again
+                    time.sleep(0.1 * (attempt + 1))
+                    continue
+                else:
+                    # All attempts failed
+                    pytest.skip(
+                        f'Tkinter not available after {max_attempts} attempts: {e}'
+                    )
+
         self.canvas = DragDropCanvas(self.root)
         self.sample_ops = [
             create_mouse_click_operation(MouseButton.LEFT, Position(10, 20)),
@@ -116,10 +130,17 @@ class TestDragDropCanvas:
     def teardown_method(self):
         """Clean up test fixtures."""
         try:
-            if hasattr(self, 'root'):
+            if hasattr(self, 'root') and self.root:
                 self.root.destroy()
+                self.root = None
         except tk.TclError:
             pass  # Already destroyed or not available
+
+        # Force cleanup and small delay to prevent resource conflicts
+        import gc
+
+        gc.collect()
+        time.sleep(0.01)
 
     def test_add_block(self):
         """Test adding blocks to canvas."""
@@ -230,10 +251,17 @@ class TestVisualEditor:
     def teardown_method(self):
         """Clean up test fixtures."""
         try:
-            if hasattr(self, 'root'):
+            if hasattr(self, 'root') and self.root:
                 self.root.destroy()
+                self.root = None
         except tk.TclError:
             pass  # Already destroyed or not available
+
+        # Force cleanup and small delay to prevent resource conflicts
+        import gc
+
+        gc.collect()
+        time.sleep(0.01)
 
     def test_load_macro(self):
         """Test loading a macro into the editor."""

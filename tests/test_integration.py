@@ -143,25 +143,44 @@ class TestCommandLineInterface(unittest.TestCase):
         self.assertIn('GameMacroAssistant', result.stdout)
         self.assertIn('--test-input', result.stdout)
 
-    @unittest.skip('Requires interactive input - run manually')
     def test_integration_test_command(self):
-        """Test the --test-input integration command"""
-        # This test is skipped by default as it requires user interaction
-        # To run: python -m pytest tests/test_integration.py::TestCommandLineInterface::test_integration_test_command -v -s
+        """Test the --test-input-file non-interactive integration command"""
+        # Use the test fixture data for non-interactive testing
+        test_data_path = os.path.join(
+            os.path.dirname(__file__), 'fixtures', 'integration_test_data.json'
+        )
 
-        _result = subprocess.run(
+        # Verify test data file exists
+        self.assertTrue(
+            os.path.exists(test_data_path),
+            f'Test data file not found: {test_data_path}',
+        )
+
+        result = subprocess.run(
             [
                 sys.executable,
                 os.path.join(os.path.dirname(__file__), '..', 'src', 'main.py'),
-                '--test-input',
+                '--test-input-file',
+                test_data_path,
             ],
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=30,
         )
 
-        # Note: This will likely fail without user interaction
-        # In a real scenario, you'd need automated input simulation
+        # Check that the command executed successfully
+        self.assertEqual(
+            result.returncode,
+            0,
+            f'Integration test failed with exit code {result.returncode}. '
+            f'stdout: {result.stdout}, stderr: {result.stderr}',
+        )
+
+        # Verify expected output contains key indicators of successful test
+        self.assertIn('[OK] Test data loaded successfully', result.stdout)
+        self.assertIn('[OK] Mouse clicks loaded successfully', result.stdout)
+        self.assertIn('Hello World', result.stdout)
+        self.assertIn('Test PASSED', result.stdout)
 
 
 class TestDataPersistence(unittest.TestCase):
