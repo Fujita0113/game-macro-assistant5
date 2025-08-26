@@ -19,7 +19,14 @@
       "Bash(pytest:*)",
       "Bash(ruff:*)",
       "Bash(find:*)",
-      "Bash(python -m pytest tests/test_integration.py --tb=short -v)"
+      "Bash(python -m pytest tests/test_integration.py --tb=short -v)",
+      "Bash(python -m pytest tests/test_integration.py -v)",
+      "Bash(python -m pytest tests/test_input_capture.py -v)",
+      "Bash(python -m pytest tests/test_screen_capture.py -v)",
+      "Bash(python -m pytest tests/test_visual_editor_functionality.py -v)",
+      "Bash(python -m pytest tests/ --tb=short)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
