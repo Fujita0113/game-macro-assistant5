@@ -101,6 +101,11 @@ class TestDragDropCanvas:
 
     def setup_method(self):
         """Set up test fixtures."""
+        # Try headless display setup first for better CI/CD compatibility
+        from tests.utils.display_setup import setup_headless_display
+
+        setup_headless_display()
+
         # Try multiple attempts to create Tk root to handle resource contention
         max_attempts = 3
 
@@ -230,11 +235,30 @@ class TestVisualEditor:
 
     def setup_method(self):
         """Set up test fixtures."""
-        try:
-            self.root = tk.Tk()
-            self.root.withdraw()  # Hide window during tests
-        except tk.TclError as e:
-            pytest.skip(f'Tkinter not available: {e}')
+        # Try headless display setup first for better CI/CD compatibility
+        from tests.utils.display_setup import setup_headless_display
+
+        setup_headless_display()
+
+        # Try multiple attempts to create Tk root to handle resource contention
+        max_attempts = 3
+
+        for attempt in range(max_attempts):
+            try:
+                self.root = tk.Tk()
+                self.root.withdraw()  # Hide window during tests
+                break
+            except tk.TclError as e:
+                if attempt < max_attempts - 1:
+                    # Wait a bit and try again
+                    time.sleep(0.1 * (attempt + 1))
+                    continue
+                else:
+                    # All attempts failed
+                    pytest.skip(
+                        f'Tkinter not available after {max_attempts} attempts: {e}'
+                    )
+
         self.editor = VisualEditor(self.root)
 
         # Create test macro
