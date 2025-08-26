@@ -92,18 +92,23 @@ class ImageEditor:
             # Load image from bytes
             self.image = Image.open(io.BytesIO(self.image_data))
             
+            # Issue requirement: Handle very large images
+            img_width, img_height = self.image.size
+            if img_width > 10000 or img_height > 10000:
+                self._show_error("画像が大きすぎます。10000x10000ピクセル以下の画像を使用してください。")
+                return
+            
             # Calculate scale factor to fit in window while maintaining aspect ratio
             max_width = 700
             max_height = 500
             
-            img_width, img_height = self.image.size
             scale_x = max_width / img_width
             scale_y = max_height / img_height
             self.scale_factor = min(scale_x, scale_y, 1.0)  # Don't scale up
             
-            # Calculate display size
-            self.display_width = int(img_width * self.scale_factor)
-            self.display_height = int(img_height * self.scale_factor)
+            # Calculate display size with improved precision
+            self.display_width = round(img_width * self.scale_factor)
+            self.display_height = round(img_height * self.scale_factor)
             
             # Resize image for display
             display_image = self.image.resize(
@@ -115,9 +120,14 @@ class ImageEditor:
             self.photo = ImageTk.PhotoImage(display_image)
             
         except Exception as e:
-            # Handle image loading errors
+            # Issue requirement: Appropriate error handling
             print(f"Error loading image: {e}")
-            self._show_error("画像を読み込めませんでした。")
+            if "cannot identify image file" in str(e).lower():
+                self._show_error("画像形式が認識できません。PNG、JPEGなどの標準的な形式を使用してください。")
+            elif "out of memory" in str(e).lower():
+                self._show_error("メモリ不足です。より小さな画像を使用してください。")
+            else:
+                self._show_error("画像を読み込めませんでした。")
     
     def _setup_ui(self):
         """Set up the user interface elements."""
@@ -299,11 +309,11 @@ class ImageEditor:
         if width < 5 or height < 5:
             return None
         
-        # Convert to original image coordinates
-        orig_x = int(left / self.scale_factor)
-        orig_y = int(top / self.scale_factor)
-        orig_width = int(width / self.scale_factor)
-        orig_height = int(height / self.scale_factor)
+        # Convert to original image coordinates with improved precision
+        orig_x = round(left / self.scale_factor)
+        orig_y = round(top / self.scale_factor)
+        orig_width = round(width / self.scale_factor)
+        orig_height = round(height / self.scale_factor)
         
         # Ensure coordinates are within original image bounds
         if self.image:
