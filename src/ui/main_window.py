@@ -7,6 +7,8 @@ This module provides the primary GUI for controlling macro recording operations.
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Callable, Optional
+from .dialogs.file_dialog_manager import FileDialogManager
+from .visual_editor import VisualEditor
 
 
 class MainWindow:
@@ -30,6 +32,9 @@ class MainWindow:
         # Callbacks for recording control
         self.on_start_recording: Optional[Callable[[], None]] = None
         self.on_stop_recording: Optional[Callable[[], None]] = None
+
+        # File dialog manager
+        self.file_dialog_manager = FileDialogManager(self.root)
 
         self._setup_ui()
         self._center_window()
@@ -60,23 +65,30 @@ class MainWindow:
         button_frame.grid(row=2, column=0, pady=(0, 10))
         button_frame.columnconfigure(0, weight=1)
         button_frame.columnconfigure(1, weight=1)
+        button_frame.columnconfigure(2, weight=1)
 
         # Start recording button
         self.start_button = ttk.Button(
             button_frame, text='記録開始', command=self._on_start_clicked, width=12
         )
-        self.start_button.grid(row=0, column=0, padx=(0, 10))
+        self.start_button.grid(row=0, column=0, padx=(0, 5))
+
+        # Open file button
+        self.open_button = ttk.Button(
+            button_frame, text='開く', command=self._on_open_clicked, width=12
+        )
+        self.open_button.grid(row=0, column=1, padx=(5, 5))
 
         # Exit button
         self.exit_button = ttk.Button(
             button_frame, text='終了', command=self._on_exit_clicked, width=12
         )
-        self.exit_button.grid(row=0, column=1, padx=(10, 0))
+        self.exit_button.grid(row=0, column=2, padx=(5, 0))
 
         # Instructions label
         instructions = ttk.Label(
             main_frame,
-            text='記録を開始してマウス・キーボード操作を行ってください。\nESCキーで記録を停止します。',
+            text='記録を開始してマウス・キーボード操作を行ってください。\nESCキーで記録を停止します。\n\n既存のマクロファイルを開くには「開く」ボタンを使用してください。',
             font=('Arial', 9),
             justify='center',
         )
@@ -104,6 +116,14 @@ class MainWindow:
         """Handle start recording button click."""
         if self.on_start_recording:
             self.on_start_recording()
+
+    def _on_open_clicked(self):
+        """Handle open file button click."""
+        loaded_recording = self.file_dialog_manager.load_macro()
+        if loaded_recording:
+            # Open visual editor with loaded recording
+            visual_editor = VisualEditor(loaded_recording, self.root)
+            visual_editor.show()
 
     def _on_exit_clicked(self):
         """Handle exit button click."""

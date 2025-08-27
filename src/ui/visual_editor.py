@@ -13,6 +13,7 @@ import io
 
 from ..core.macro_data import MacroRecording, OperationBlock, OperationType
 from .image_editor import ImageEditor
+from .dialogs.file_dialog_manager import FileDialogManager
 
 
 class OperationBlockWidget:
@@ -217,6 +218,9 @@ class VisualEditor:
         self.canvas: Optional[tk.Canvas] = None
         self.scrollable_frame: Optional[ttk.Frame] = None
 
+        # File dialog manager for save/load operations
+        self.file_dialog_manager: Optional[FileDialogManager] = None
+
         self._setup_window()
         self._setup_ui()
         self._create_block_widgets()
@@ -234,6 +238,9 @@ class VisualEditor:
 
         # Handle window close
         self.window.protocol('WM_DELETE_WINDOW', self._on_close)
+
+        # Initialize file dialog manager
+        self.file_dialog_manager = FileDialogManager(self.window)
 
     def _setup_ui(self):
         """Set up the user interface."""
@@ -271,6 +278,10 @@ class VisualEditor:
         button_frame.pack(fill=tk.X, pady=(10, 0))
 
         # Buttons
+        ttk.Button(button_frame, text='開く', command=self._on_open, width=15).pack(
+            side=tk.LEFT
+        )
+
         ttk.Button(button_frame, text='保存', command=self._on_save, width=15).pack(
             side=tk.RIGHT, padx=(10, 0)
         )
@@ -380,7 +391,57 @@ class VisualEditor:
 
     def _on_save(self):
         """Handle save button click."""
-        messagebox.showinfo('保存', 'マクロが保存されました。', parent=self.window)
+        if self.file_dialog_manager:
+            # Generate initial filename based on recording name
+            initial_filename = self.recording.name or '新しいマクロ'
+            success = self.file_dialog_manager.save_macro(
+                self.recording, initial_filename
+            )
+
+            if success:
+                # Update window title to reflect saved file
+                if hasattr(self.file_dialog_manager, 'last_saved_path'):
+                    self.window.title(
+                        f'ビジュアルエディタ - {self.file_dialog_manager.last_saved_path.name}'
+                    )
+
+    def _on_open(self):
+        """Handle open button click."""
+        if self.file_dialog_manager:
+            loaded_recording = self.file_dialog_manager.load_macro()
+
+            if loaded_recording:
+                # Update the current recording
+                self.recording = loaded_recording
+
+                # Update window title
+                self.window.title(f'ビジュアルエディタ - {self.recording.name}')
+
+                # Recreate block widgets with new data
+                self._clear_block_widgets()
+                self._create_block_widgets()
+
+                # Update header info
+                self._update_header_info()
+
+    def _clear_block_widgets(self):
+        """Clear all existing block widgets."""
+        for widget in self.block_widgets:
+            widget.destroy()
+        self.block_widgets.clear()
+
+    def _update_header_info(self):
+        """Update the header information display."""
+        # Find and update the info label
+        for child in self.main_frame.winfo_children():
+            if isinstance(child, ttk.Frame):
+                for subchild in child.winfo_children():
+                    if isinstance(subchild, ttk.Label) and '操作数:' in subchild.cget(
+                        'text'
+                    ):
+                        info_text = f'操作数: {self.recording.operation_count}  再生時間: {self.recording.duration:.1f}秒'
+                        subchild.config(text=info_text)
+                        break
 
     def _on_close(self):
         """Handle close button click."""
