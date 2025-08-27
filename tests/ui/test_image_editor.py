@@ -531,7 +531,8 @@ class TestImageEditorIntegration(TkinterTestMixin, unittest.TestCase):
         # Clean up
         editor.window.destroy()
 
-    def test_image_load_failure_ok_button_disabled(self):
+    @patch('ui.image_editor.messagebox.showerror')
+    def test_image_load_failure_ok_button_disabled(self, mock_messagebox):
         """Test that OK button is disabled when image loading fails."""
         # Create invalid image data
         invalid_data = b'invalid image data'
@@ -548,7 +549,8 @@ class TestImageEditorIntegration(TkinterTestMixin, unittest.TestCase):
         # Verify photo is None
         self.assertIsNone(self.editor.photo)
 
-    def test_oversized_image_ok_button_disabled(self):
+    @patch('ui.image_editor.messagebox.showerror')
+    def test_oversized_image_ok_button_disabled(self, mock_messagebox):
         """Test that OK button is disabled for oversized images."""
         # Create oversized image data (over 10,000px limit)
         oversized_data = self.test_data.create_standard_test_image(10001, 100)
@@ -573,7 +575,8 @@ class TestImageEditorIntegration(TkinterTestMixin, unittest.TestCase):
         self.assertIsNotNone(self.editor.window.bind('<Return>'))
         self.assertIsNotNone(self.editor.window.bind('<Escape>'))
 
-    def test_canvas_events_not_bound_when_load_failed(self):
+    @patch('ui.image_editor.messagebox.showerror')
+    def test_canvas_events_not_bound_when_load_failed(self, mock_messagebox):
         """Test that canvas events are not bound when image loading fails."""
         # Create invalid image data
         invalid_data = b'invalid image data'
