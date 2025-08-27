@@ -261,7 +261,7 @@ class ImageEditor:
             # Validate image data first
             if not self.image_data:
                 raise ImageLoadError(
-                    ImageLoadErrorType.INVALID_FORMAT, 'Empty image data provided'
+                    ImageLoadErrorType.INVALID_FORMAT, '画像データが空です'
                 )
 
             # Load image from bytes with enhanced validation
@@ -272,16 +272,23 @@ class ImageEditor:
             if img_width > 10000 or img_height > 10000:
                 raise ImageLoadError(
                     ImageLoadErrorType.OVERSIZED_IMAGE,
-                    f'Image too large: {img_width}x{img_height} pixels (max: 10000x10000)',
+                    f'画像が大きすぎます: {img_width}x{img_height} pixels (max: 10000x10000)',
                     None,
                 )
 
             # Initialize high-precision coordinate transformer
             max_width = 700
             max_height = 500
+
+            # For very small images, don't scale up
+            if img_width <= max_width and img_height <= max_height:
+                display_width, display_height = img_width, img_height
+            else:
+                display_width, display_height = max_width, max_height
+
             self.coordinate_transformer = CoordinateTransformer(
                 original_size=(img_width, img_height),
-                display_size=(max_width, max_height),
+                display_size=(display_width, display_height),
             )
 
             # Calculate precise display dimensions

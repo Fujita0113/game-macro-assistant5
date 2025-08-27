@@ -287,8 +287,8 @@ class TestImageEditorErrorHandling(TkinterTestMixin, unittest.TestCase):
         mock_messagebox.assert_called_once()
         args, kwargs = mock_messagebox.call_args
         error_message = args[1]
-        # Empty data triggers "cannot identify image file" path, not generic error
-        self.assertIn('認識できません', error_message)
+        # Empty data should show empty data error message
+        self.assertIn('空', error_message)
 
     @patch('ui.image_editor.messagebox.showerror')
     def test_memory_error_handling(self, mock_messagebox):
@@ -542,8 +542,8 @@ class TestImageEditorIntegration(TkinterTestMixin, unittest.TestCase):
         # Verify load failed flag is set
         self.assertTrue(self.editor.load_failed)
 
-        # Verify OK button is disabled
-        self.assertEqual(self.editor.ok_button['state'], 'disabled')
+        # Verify OK button is disabled (tkinter returns string object)
+        self.assertEqual(str(self.editor.ok_button['state']), 'disabled')
 
         # Verify photo is None
         self.assertIsNone(self.editor.photo)
@@ -559,8 +559,8 @@ class TestImageEditorIntegration(TkinterTestMixin, unittest.TestCase):
         # Verify load failed flag is set
         self.assertTrue(self.editor.load_failed)
 
-        # Verify OK button is disabled
-        self.assertEqual(self.editor.ok_button['state'], 'disabled')
+        # Verify OK button is disabled (tkinter returns string object)
+        self.assertEqual(str(self.editor.ok_button['state']), 'disabled')
 
     def test_keyboard_shortcuts_exist(self):
         """Test that keyboard shortcuts are properly bound."""
