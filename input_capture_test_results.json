@@ -1,7 +1,7 @@
 {
-  "test_timestamp": "2025-08-26T11:10:04.516294",
+  "test_timestamp": "2025-08-27T20:59:10.617506",
   "test_source": "file_based",
-  "source_file": "C:\\Users\\yufuj\\Desktop\\gameAutoProject5\\tests\\fixtures\\integration_test_data.json",
+  "source_file": "C:\\Users\\yufuj\\Desktop\\gameAutoProject5\\worktrees\\feat-visual-editor-base-v2\\tests\\fixtures\\integration_test_data.json",
   "total_events": 15,
   "mouse_clicks": 3,
   "keyboard_events": 12,

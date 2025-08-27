@@ -20,6 +20,7 @@ from core.macro_data import (
 from core.input_capture import InputCaptureManager
 from core.screen_capture import ScreenCaptureManager
 from core.events import MouseEvent, KeyboardEvent, EventType
+from .visual_editor import VisualEditor
 
 
 class RecordingController:
@@ -38,6 +39,9 @@ class RecordingController:
         # UI callback
         self.on_recording_state_changed: Optional[Callable[[bool], None]] = None
         self.on_recording_completed: Optional[Callable[[MacroRecording], None]] = None
+
+        # Visual editor
+        self.visual_editor: Optional[VisualEditor] = None
 
     def start_recording(self, recording_name: Optional[str] = None) -> bool:
         """
@@ -124,6 +128,10 @@ class RecordingController:
 
             if completed_recording and self.on_recording_completed:
                 self.on_recording_completed(completed_recording)
+
+            # Automatically open visual editor after recording completion
+            if completed_recording and completed_recording.operation_count > 0:
+                self.open_visual_editor(completed_recording)
 
             print(
                 f'Recording stopped. Operations recorded: {completed_recording.operation_count if completed_recording else 0}'
@@ -233,3 +241,37 @@ class RecordingController:
             'duration': self.current_recording.duration,
             'created_at': self.current_recording.created_at,
         }
+
+    def open_visual_editor(self, macro_recording: MacroRecording):
+        """
+        Open the visual editor with the given macro recording.
+
+        Args:
+            macro_recording: The macro recording to load in the editor
+        """
+        try:
+            # Create or reuse visual editor
+            if not self.visual_editor:
+                self.visual_editor = VisualEditor()
+
+            # Load the macro into the editor
+            self.visual_editor.load_macro(macro_recording)
+
+            # Show the editor window
+            self.visual_editor.show()
+
+            print(
+                f'Visual editor opened with {macro_recording.operation_count} operations'
+            )
+
+        except Exception as e:
+            print(f'Error opening visual editor: {e}')
+
+    def close_visual_editor(self):
+        """Close the visual editor if it's open."""
+        if self.visual_editor:
+            try:
+                self.visual_editor.hide()
+                print('Visual editor closed')
+            except Exception as e:
+                print(f'Error closing visual editor: {e}')
