@@ -1,155 +1,103 @@
 {
-  "test_timestamp": "2025-08-24T17:32:15.944710",
-  "total_events": 24,
+  "test_timestamp": "2025-08-26T11:10:04.516294",
+  "test_source": "file_based",
+  "source_file": "C:\\Users\\yufuj\\Desktop\\gameAutoProject5\\tests\\fixtures\\integration_test_data.json",
+  "total_events": 15,
   "mouse_clicks": 3,
-  "keyboard_events": 21,
+  "keyboard_events": 12,
   "events": [
     {
-      "type": "key_release",
-      "key": "enter",
-      "timestamp": "2025-08-24T17:32:07.924896",
+      "type": "mouse_click",
+      "x": 100,
+      "y": 200,
+      "button": "left",
+      "timestamp": "2024-01-01T00:00:00+00:00"
+    },
+    {
+      "type": "mouse_click",
+      "x": 300,
+      "y": 400,
+      "button": "right",
+      "timestamp": "2024-01-01T00:00:00.500000+00:00"
+    },
+    {
+      "type": "mouse_click",
+      "x": 500,
+      "y": 300,
+      "button": "middle",
+      "timestamp": "2024-01-01T00:00:01+00:00"
+    },
+    {
+      "type": "key_press",
+      "key": "H",
+      "timestamp": "2024-01-01T00:00:01.500000+00:00",
+      "char": "H"
+    },
+    {
+      "type": "key_press",
+      "key": "e",
+      "timestamp": "2024-01-01T00:00:01.600000+00:00",
+      "char": "e"
+    },
+    {
+      "type": "key_press",
+      "key": "l",
+      "timestamp": "2024-01-01T00:00:01.700000+00:00",
+      "char": "l"
+    },
+    {
+      "type": "key_press",
+      "key": "l",
+      "timestamp": "2024-01-01T00:00:01.800000+00:00",
+      "char": "l"
+    },
+    {
+      "type": "key_press",
+      "key": "o",
+      "timestamp": "2024-01-01T00:00:01.900000+00:00",
+      "char": "o"
+    },
+    {
+      "type": "key_press",
+      "key": "space",
+      "timestamp": "2024-01-01T00:00:02+00:00",
+      "char": " "
+    },
+    {
+      "type": "key_press",
+      "key": "W",
+      "timestamp": "2024-01-01T00:00:02.100000+00:00",
+      "char": "W"
+    },
+    {
+      "type": "key_press",
+      "key": "o",
+      "timestamp": "2024-01-01T00:00:02.200000+00:00",
+      "char": "o"
+    },
+    {
+      "type": "key_press",
+      "key": "r",
+      "timestamp": "2024-01-01T00:00:02.300000+00:00",
+      "char": "r"
+    },
+    {
+      "type": "key_press",
+      "key": "l",
+      "timestamp": "2024-01-01T00:00:02.400000+00:00",
+      "char": "l"
+    },
+    {
+      "type": "key_press",
+      "key": "d",
+      "timestamp": "2024-01-01T00:00:02.500000+00:00",
+      "char": "d"
+    },
+    {
+      "type": "key_press",
+      "key": "esc",
+      "timestamp": "2024-01-01T00:00:03+00:00",
       "char": null
-    },
-    {
-      "type": "mouse_click",
-      "x": 1707,
-      "y": 873,
-      "button": "left",
-      "timestamp": "2025-08-24T17:32:08.596850"
-    },
-    {
-      "type": "mouse_click",
-      "x": 1449,
-      "y": 894,
-      "button": "left",
-      "timestamp": "2025-08-24T17:32:08.988461"
-    },
-    {
-      "type": "mouse_click",
-      "x": 1440,
-      "y": 1051,
-      "button": "left",
-      "timestamp": "2025-08-24T17:32:09.308765"
-    },
-    {
-      "type": "key_press",
-      "key": "h",
-      "timestamp": "2025-08-24T17:32:10.552632",
-      "char": "h"
-    },
-    {
-      "type": "key_release",
-      "key": "h",
-      "timestamp": "2025-08-24T17:32:10.659054",
-      "char": "h"
-    },
-    {
-      "type": "key_press",
-      "key": "e",
-      "timestamp": "2025-08-24T17:32:10.703425",
-      "char": "e"
-    },
-    {
-      "type": "key_release",
-      "key": "e",
-      "timestamp": "2025-08-24T17:32:10.835045",
-      "char": "e"
-    },
-    {
-      "type": "key_press",
-      "key": "l",
-      "timestamp": "2025-08-24T17:32:11.404198",
-      "char": "l"
-    },
-    {
-      "type": "key_release",
-      "key": "l",
-      "timestamp": "2025-08-24T17:32:11.513660",
-      "char": "l"
-    },
-    {
-      "type": "key_press",
-      "key": "l",
-      "timestamp": "2025-08-24T17:32:11.601099",
-      "char": "l"
-    },
-    {
-      "type": "key_release",
-      "key": "l",
-      "timestamp": "2025-08-24T17:32:11.694422",
-      "char": "l"
-    },
-    {
-      "type": "key_press",
-      "key": "o",
-      "timestamp": "2025-08-24T17:32:11.851900",
-      "char": "o"
-    },
-    {
-      "type": "key_release",
-      "key": "o",
-      "timestamp": "2025-08-24T17:32:11.942751",
-      "char": "o"
-    },
-    {
-      "type": "key_press",
-      "key": "w",
-      "timestamp": "2025-08-24T17:32:12.867767",
-      "char": "w"
-    },
-    {
-      "type": "key_release",
-      "key": "w",
-      "timestamp": "2025-08-24T17:32:12.995961",
-      "char": "w"
-    },
-    {
-      "type": "key_press",
-      "key": "o",
-      "timestamp": "2025-08-24T17:32:13.164297",
-      "char": "o"
-    },
-    {
-      "type": "key_release",
-      "key": "o",
-      "timestamp": "2025-08-24T17:32:13.291541",
-      "char": "o"
-    },
-    {
-      "type": "key_press",
-      "key": "r",
-      "timestamp": "2025-08-24T17:32:13.572573",
-      "char": "r"
-    },
-    {
-      "type": "key_release",
-      "key": "r",
-      "timestamp": "2025-08-24T17:32:13.678207",
-      "char": "r"
-    },
-    {
-      "type": "key_press",
-      "key": "l",
-      "timestamp": "2025-08-24T17:32:14.113739",
-      "char": "l"
-    },
-    {
-      "type": "key_release",
-      "key": "l",
-      "timestamp": "2025-08-24T17:32:14.259206",
-      "char": "l"
-    },
-    {
-      "type": "key_press",
-      "key": "d",
-      "timestamp": "2025-08-24T17:32:14.396395",
-      "char": "d"
-    },
-    {
-      "type": "key_release",
-      "key": "d",
-      "timestamp": "2025-08-24T17:32:14.524834",
-      "char": "d"
     }
   ]
 }

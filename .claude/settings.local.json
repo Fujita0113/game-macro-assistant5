@@ -26,7 +26,14 @@
       "Bash(python -m pytest tests/test_visual_editor_functionality.py -v)",
       "Bash(python -m pytest tests/ --tb=short)",
       "Bash(python -m pytest tests/ -v)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "mcp__serena__check_onboarding_performed",
+      "mcp__serena__onboarding",
+      "mcp__serena__list_dir",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__find_symbol",
+      "mcp__serena__write_memory",
+      "mcp__serena__think_about_collected_information"
     ],
     "deny": [],
     "ask": []
