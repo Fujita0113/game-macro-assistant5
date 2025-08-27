@@ -48,7 +48,10 @@ def test_gdi_fallback():
         print('[SUCCESS] Watermark applied to real screenshot')
         print('File: watermark_real_test.png')
 
-    return True
+    # Test assertions instead of return
+    assert normal_screenshot is not None or gdi_screenshot is not None, (
+        'At least one capture method should work'
+    )
 
 
 if __name__ == '__main__':

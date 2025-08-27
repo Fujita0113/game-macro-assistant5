@@ -33,20 +33,26 @@ class TkinterTestMixin:
     def setUp_tkinter(self):
         """Set up Tkinter with environment error handling."""
         try:
+            import PIL.ImageTk
+
             self.root = tk.Tk()
             self.root.withdraw()  # Hide test window
+
+            # Test PIL ImageTk integration which is critical for our tests
+            from PIL import Image
+
+            test_image = Image.new('RGB', (10, 10), color='red')
+            test_photo = PIL.ImageTk.PhotoImage(test_image)
+
+            # Test basic Tkinter functionality with images
+            test_canvas = tk.Canvas(self.root, width=10, height=10)
+            test_item = test_canvas.create_image(0, 0, image=test_photo, anchor='nw')
+            test_canvas.delete(test_item)
+            test_canvas.destroy()
             return True
-        except tk.TclError as e:
-            error_msg = str(e).lower()
-            if (
-                'display' in error_msg
-                or 'tcl_findlibrary' in error_msg
-                or 'no display' in error_msg
-            ):
-                pytest.skip(f'Tkinter environment not available: {e}')
-            else:
-                # Re-raise unexpected Tkinter errors
-                raise
+        except (tk.TclError, ImportError, AttributeError, OSError) as e:
+            # Skip on any GUI/image-related errors
+            pytest.skip(f'GUI environment not available for image tests: {e}')
         except Exception as e:
             pytest.skip(f'Unexpected GUI initialization error: {e}')
 

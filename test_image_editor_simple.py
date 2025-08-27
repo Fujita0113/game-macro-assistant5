@@ -91,7 +91,7 @@ def test_macro_data_structures():
     assert recording_restored.name == 'Test Recording'
     print('OK MacroRecording serialization works')
 
-    return True
+    # All assertions passed
 
 
 def test_image_editor_classes():
@@ -106,7 +106,7 @@ def test_image_editor_classes():
         print('OK ImageEditor import successful')
     except ImportError as e:
         print(f'FAIL ImageEditor import failed: {e}')
-        return False
+        raise
 
     try:
         from src.ui import visual_editor
@@ -116,9 +116,9 @@ def test_image_editor_classes():
         print('OK VisualEditor import successful')
     except ImportError as e:
         print(f'FAIL VisualEditor import failed: {e}')
-        return False
+        raise
 
-    return True
+    # All assertions passed
 
 
 def test_region_selection_logic():
@@ -147,7 +147,7 @@ def test_region_selection_logic():
     assert actual_orig == expected_orig, f'Expected {expected_orig}, got {actual_orig}'
     print('OK Coordinate scaling logic works correctly')
 
-    return True
+    # All assertions passed
 
 
 def main():
@@ -166,8 +166,8 @@ def main():
 
     for test in tests:
         try:
-            if test():
-                passed += 1
+            test()  # Tests now use assertions instead of return values
+            passed += 1
         except Exception as e:
             print(f'FAIL Test failed with exception: {e}')
             import traceback
@@ -182,7 +182,7 @@ def main():
         print(
             'SUCCESS All tests passed! Image editor functionality is working correctly.'
         )
-        return True
+        # All assertions passed
     else:
         print('ERROR Some tests failed. Please check the implementation.')
         return False

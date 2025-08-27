@@ -1,6 +1,15 @@
 from typing import Optional
 from PIL import Image, ImageDraw, ImageFont, ImageGrab
-from utils.logging import log_error
+
+try:
+    from ..utils.logging import log_error
+except ImportError:
+    # Fallback for when running as main module
+    import sys
+    import os
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+    from utils.logging import log_error
 
 # Win32 APIs would be needed for advanced window handling
 WIN32_AVAILABLE = False
