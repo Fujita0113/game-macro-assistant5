@@ -166,8 +166,8 @@ class ImageEditor:
 
         # High-precision coordinate transformation
         self.coordinate_transformer: Optional[CoordinateTransformer] = None
-        self.display_width = 0
-        self.display_height = 0
+        self._display_width = 0
+        self._display_height = 0
 
         self._setup_window()
 
@@ -179,6 +179,25 @@ class ImageEditor:
 
         self._setup_ui()
         self._bind_events()
+
+    @property
+    def scale_factor(self) -> float:
+        """Get the current image scale factor."""
+        return (
+            self.coordinate_transformer.scale_factor
+            if self.coordinate_transformer
+            else 1.0
+        )
+
+    @property
+    def display_width(self) -> int:
+        """Get the display width of the image."""
+        return self._display_width
+
+    @property
+    def display_height(self) -> int:
+        """Get the display height of the image."""
+        return self._display_height
 
     def _setup_window(self):
         """Set up the image editor window."""
@@ -266,12 +285,14 @@ class ImageEditor:
             )
 
             # Calculate precise display dimensions
-            self.display_width = int(self.coordinate_transformer.actual_display_width)
-            self.display_height = int(self.coordinate_transformer.actual_display_height)
+            self._display_width = int(self.coordinate_transformer.actual_display_width)
+            self._display_height = int(
+                self.coordinate_transformer.actual_display_height
+            )
 
             # Resize image for display with high quality resampling
             display_image = self.image.resize(
-                (self.display_width, self.display_height), Image.Resampling.LANCZOS
+                (self._display_width, self._display_height), Image.Resampling.LANCZOS
             )
 
             # Convert to PhotoImage for tkinter
@@ -309,23 +330,25 @@ class ImageEditor:
             if 'cannot identify image file' in str(e).lower():
                 raise ImageLoadError(
                     ImageLoadErrorType.INVALID_FORMAT,
-                    'Unsupported image format. Please use PNG, JPEG, or other standard formats.',
+                    '画像形式が認識できません。PNG、JPEGなどの標準的な形式を使用してください。',
                     e,
                 ) from e
             else:
                 raise ImageLoadError(
-                    ImageLoadErrorType.IO_ERROR, 'Failed to read image data', e
+                    ImageLoadErrorType.IO_ERROR,
+                    '画像ファイルの読み込みに失敗しました。',
+                    e,
                 ) from e
         except MemoryError as e:
             raise ImageLoadError(
                 ImageLoadErrorType.MEMORY_ERROR,
-                'Insufficient memory to load image. Please use a smaller image.',
+                'メモリ不足です。より小さな画像を使用してください。',
                 e,
             ) from e
         except Exception as e:
             raise ImageLoadError(
                 ImageLoadErrorType.GENERIC_ERROR,
-                f'Unexpected error loading image: {str(e)}',
+                f'画像の読み込み中に予期しないエラーが発生しました: {str(e)}',
                 e,
             ) from e
 
@@ -387,8 +410,8 @@ class ImageEditor:
         self.canvas = tk.Canvas(
             canvas_frame,
             bg='white',
-            width=self.display_width,
-            height=self.display_height,
+            width=self._display_width,
+            height=self._display_height,
         )
 
         v_scrollbar = ttk.Scrollbar(
@@ -451,7 +474,10 @@ class ImageEditor:
         canvas_y = self.canvas.canvasy(event.y)
 
         # Check if click is within image bounds
-        if 0 <= canvas_x <= self.display_width and 0 <= canvas_y <= self.display_height:
+        if (
+            0 <= canvas_x <= self._display_width
+            and 0 <= canvas_y <= self._display_height
+        ):
             self.selection_start = (int(canvas_x), int(canvas_y))
             self.selection_end = self.selection_start
             self.is_selecting = True
@@ -469,8 +495,8 @@ class ImageEditor:
         canvas_y = self.canvas.canvasy(event.y)
 
         # Clamp coordinates to image bounds
-        canvas_x = max(0, min(canvas_x, self.display_width))
-        canvas_y = max(0, min(canvas_y, self.display_height))
+        canvas_x = max(0, min(canvas_x, self._display_width))
+        canvas_y = max(0, min(canvas_y, self._display_height))
 
         self.selection_end = (int(canvas_x), int(canvas_y))
 
