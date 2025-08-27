@@ -45,6 +45,8 @@ class ImageEditor:
         self.image: Optional[Image.Image] = None
         self.photo: Optional[ImageTk.PhotoImage] = None
         self.image_item: Optional[int] = None
+        self.ok_button: Optional[ttk.Button] = None
+        self.load_failed = False
 
         # Scale factor for display
         self.scale_factor = 1.0
@@ -69,6 +71,10 @@ class ImageEditor:
 
         # Handle window close
         self.window.protocol('WM_DELETE_WINDOW', self._on_cancel)
+
+        # Bind keyboard shortcuts
+        self.window.bind('<Return>', lambda e: self._on_confirm_click())
+        self.window.bind('<Escape>', lambda e: self._on_cancel())
 
     def _center_window(self):
         """Center the window on the parent."""
@@ -99,6 +105,7 @@ class ImageEditor:
             # Issue requirement: Handle very large images
             img_width, img_height = self.image.size
             if img_width > 10000 or img_height > 10000:
+                self.load_failed = True
                 self._show_error(
                     '画像が大きすぎます。10000x10000ピクセル以下の画像を使用してください。'
                 )
@@ -127,6 +134,7 @@ class ImageEditor:
         except Exception as e:
             # Issue requirement: Appropriate error handling
             print(f'Error loading image: {e}')
+            self.load_failed = True
             if 'cannot identify image file' in str(e).lower():
                 self._show_error(
                     '画像形式が認識できません。PNG、JPEGなどの標準的な形式を使用してください。'
@@ -190,9 +198,14 @@ class ImageEditor:
         button_frame.pack(fill=tk.X)
 
         # Buttons
-        ttk.Button(
+        self.ok_button = ttk.Button(
             button_frame, text='OK', command=self._on_confirm_click, width=15
-        ).pack(side=tk.RIGHT, padx=(10, 0))
+        )
+        self.ok_button.pack(side=tk.RIGHT, padx=(10, 0))
+
+        # Disable OK button if image loading failed
+        if self.load_failed or not self.photo:
+            self.ok_button.config(state='disabled')
 
         ttk.Button(
             button_frame, text='キャンセル', command=self._on_cancel, width=15
@@ -205,7 +218,7 @@ class ImageEditor:
 
     def _bind_events(self):
         """Bind mouse events for selection."""
-        if self.canvas:
+        if self.canvas and self.photo and not self.load_failed:
             self.canvas.bind('<Button-1>', self._on_mouse_down)
             self.canvas.bind('<B1-Motion>', self._on_mouse_drag)
             self.canvas.bind('<ButtonRelease-1>', self._on_mouse_up)
