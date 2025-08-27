@@ -6,7 +6,7 @@ rectangular regions for macro condition matching.
 """
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 from typing import Optional, Tuple, Callable
 import io
@@ -360,7 +360,7 @@ class ImageEditor:
 
     def _show_error(self, message: str):
         """Show error message to user."""
-        tk.messagebox.showerror('エラー', message, parent=self.window)
+        messagebox.showerror('エラー', message, parent=self.window)
 
     @staticmethod
     def open_image_editor(
