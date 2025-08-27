@@ -378,6 +378,24 @@ class VisualEditor:
                 'エラー', f'画像エディタを開けませんでした: {e}', parent=self.window
             )
 
+    def _bind_keyboard_shortcuts(self) -> None:
+        """Bind keyboard shortcuts for undo/redo operations."""
+        if self.window:
+            # Bind Ctrl+Z for undo
+            self.window.bind('<Control-z>', lambda e: self._on_undo())
+            self.window.bind('<Control-Z>', lambda e: self._on_undo())
+
+            # Bind Ctrl+Y for redo
+            self.window.bind('<Control-y>', lambda e: self._on_redo())
+            self.window.bind('<Control-Y>', lambda e: self._on_redo())
+
+            # Also bind Ctrl+Shift+Z as alternative redo shortcut
+            self.window.bind('<Control-Shift-z>', lambda e: self._on_redo())
+            self.window.bind('<Control-Shift-Z>', lambda e: self._on_redo())
+
+            # Set focus to window to ensure shortcuts work
+            self.window.focus_set()
+
     def _on_save(self):
         """Handle save button click."""
         messagebox.showinfo('保存', 'マクロが保存されました。', parent=self.window)
