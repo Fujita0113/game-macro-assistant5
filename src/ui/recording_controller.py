@@ -135,16 +135,9 @@ class RecordingController:
             # Cleanup
             self._cleanup_recording()
 
-            # Notify UI
-            if self.on_recording_state_changed:
-                self.on_recording_state_changed(False)
-
-            if completed_recording and self.on_recording_completed:
-                self.on_recording_completed(completed_recording)
-
-            # Automatically open visual editor after recording completion
-            if completed_recording and completed_recording.operation_count > 0:
-                self.open_visual_editor(completed_recording)
+            # Use shared completion logic
+            if completed_recording:
+                self._handle_recording_completion(completed_recording)
 
             print(
                 f'Recording stopped. Operations recorded: {completed_recording.operation_count if completed_recording else 0}'
@@ -179,33 +172,18 @@ class RecordingController:
         except Exception as e:
             print(f'Error in recording monitor: {e}')
 
-        # If ESC terminated, handle completion callbacks
+        # If ESC terminated, handle completion using shared logic
         if self._esc_terminated and self.current_recording:
             try:
+                print('ESC termination detected, finalizing recording...')
                 # Get completed recording before cleanup
                 completed_recording = self.current_recording
 
-                # Notify UI of state change
-                if self.on_recording_state_changed:
-                    self.on_recording_state_changed(False)
-
-                # Notify of completion
-                if self.on_recording_completed:
-                    self.on_recording_completed(completed_recording)
-
-                # Automatically open visual editor after recording completion
-                if completed_recording.operation_count > 0:
-                    self.open_visual_editor(completed_recording)
-
-                print(
-                    f'Recording stopped via ESC. Operations recorded: {completed_recording.operation_count}'
-                )
+                # Use shared completion logic
+                self._handle_recording_completion(completed_recording)
 
             except Exception as e:
-                print(f'Error handling ESC termination: {e}')
-            finally:
-                # Clean up recording state
-                self._cleanup_recording()
+                print(f'Error finalizing ESC termination: {e}')
 
     def _process_captured_events(self):
         """Process events captured by InputCaptureManager and convert to macro format."""
@@ -290,6 +268,24 @@ class RecordingController:
                 pass
 
         return None
+
+    def _handle_recording_completion(self, completed_recording: MacroRecording):
+        """Handle recording completion with UI callbacks and visual editor launch."""
+        try:
+            # Notify UI of state change
+            if self.on_recording_state_changed:
+                self.on_recording_state_changed(False)
+
+            # Notify of completion
+            if self.on_recording_completed:
+                self.on_recording_completed(completed_recording)
+
+            # Automatically open visual editor after recording completion
+            if completed_recording.operation_count > 0:
+                self.open_visual_editor(completed_recording)
+
+        except Exception as e:
+            print(f'Error in recording completion handling: {e}')
 
     def _cleanup_recording(self):
         """Clean up recording resources."""
