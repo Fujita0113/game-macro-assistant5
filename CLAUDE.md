@@ -47,6 +47,16 @@ Based on the requirements document, this application should implement:
 - Error handling and user feedback are critical given the real-time nature of game automation
 - Consider cross-platform compatibility for screen capture methods
 
+## Development Principles
+
+すべての開発において、以下の原則を厳守してください：
+
+- **KISS (Keep It Simple, Stupid)**: 複雑な抽象化を避け、必要十分な機能のみ実装すること
+- **YAGNI (You Aren’t Gonna Need It)**: 現在必要な機能のみに集中し、不要な未来機能は実装しないこと
+- **Incremental**: 動作する最小限の機能から段階的に拡張していくこと
+- **TDD (Test-Driven Development)**: Claude が書いたコードの信頼性を担保するため、必ずテストを書いてから開発を進めること
+
+
 ### Claude Code Constraints
 
 - **IMPORTANT**: Claude Code cannot change directories during a session. DO NOT use `cd` commands as they will cause errors
@@ -121,6 +131,28 @@ When a user reports that implementation is completed, follow this standardized w
    ```
 
 This workflow ensures consistent project management and maintains clean repository state.
+
+## Bug Fix Workflow
+
+バグ修正の際は、以下のフローを厳守してください：
+
+1. **ロギングで原因を完全に特定**
+   - 詳細なログ出力を追加してバグの根本原因を特定
+   - デバッグ情報を使って問題の再現手順を明確化
+
+2. **回帰テストを作成して、通らないのを確認**
+   - バグを再現するテストケースを作成
+   - テストが失敗することを確認（Red状態）
+
+3. **TDDで修正**
+   - テストを通すための最小限の修正を実装
+   - 他の機能に影響を与えないよう注意深く修正
+
+4. **回帰テストが通るのを確認**
+   - 作成したテストケースが成功することを確認（Green状態）
+   - 既存のすべてのテストも引き続き成功することを確認
+
+このフローにより、バグの確実な修正と将来の回帰防止を保証します。
 
 ## Definition of Done
 
