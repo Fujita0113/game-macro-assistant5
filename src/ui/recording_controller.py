@@ -127,9 +127,9 @@ class RecordingController:
                 if not is_same_thread:
                     # Only join if we're not in the same thread (avoid "cannot join current thread" error)
                     self._recording_thread.join(timeout=1.0)
-                    print(f'DEBUG: Thread join completed')
+                    print('DEBUG: Thread join completed')
                 else:
-                    print(f'DEBUG: Skipping join - called from monitoring thread itself')
+                    print('DEBUG: Skipping join - called from monitoring thread itself')
 
             # Get completed recording
             completed_recording = self.current_recording
@@ -151,7 +151,7 @@ class RecordingController:
 
         except Exception as e:
             print(f'Error stopping recording: {e}')
-            print(f'DEBUG: Exception details:')
+            print('DEBUG: Exception details:')
             traceback.print_exc()
             self._cleanup_recording()
             return None
