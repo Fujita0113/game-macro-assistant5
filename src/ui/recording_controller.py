@@ -36,6 +36,9 @@ class RecordingController:
         self._recording_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
 
+        # Track processed events to prevent duplicates
+        self._processed_event_timestamps = set()
+
         # UI callback
         self.on_recording_state_changed: Optional[Callable[[bool], None]] = None
         self.on_recording_completed: Optional[Callable[[MacroRecording], None]] = None
@@ -68,6 +71,9 @@ class RecordingController:
                 operations=[],
                 metadata={'created_by': 'GameMacroAssistant'},
             )
+
+            # Clear processed events from previous recordings
+            self._processed_event_timestamps.clear()
 
             # Start capture systems
             self.input_capture.start_recording()  # InputCaptureManager uses start_recording()
@@ -171,11 +177,19 @@ class RecordingController:
         try:
             events = self.input_capture.get_recorded_events()
 
-            # Process new events (skip already processed ones)
-            current_count = len(self.current_recording.operations)
-            new_events = events[current_count:]
+            # Process only unprocessed events using timestamp-based deduplication
+            for event in events:
+                # Create unique identifier from timestamp
+                event_id = event.timestamp.isoformat()
 
-            for event in new_events:
+                # Skip if already processed
+                if event_id in self._processed_event_timestamps:
+                    continue
+
+                # Mark as processed before attempting conversion
+                self._processed_event_timestamps.add(event_id)
+
+                # Convert and add operation
                 operation = self._convert_event_to_operation(event)
                 if operation:
                     self.current_recording.add_operation(operation)
@@ -198,7 +212,13 @@ class RecordingController:
                     event.button.value.lower(), MouseButton.LEFT
                 )
                 position = Position(x=int(event.x), y=int(event.y))
-                return create_mouse_click_operation(button, position, event.timestamp)
+
+                # Convert datetime timestamp to float
+                timestamp_float = (
+                    event.timestamp.timestamp() if event.timestamp else time.time()
+                )
+
+                return create_mouse_click_operation(button, position, timestamp_float)
 
             elif isinstance(event, KeyboardEvent):
                 # Convert KeyboardEvent to our format
@@ -210,10 +230,26 @@ class RecordingController:
                     if hasattr(event, 'char')
                     else 'unknown'
                 )
-                return create_key_operation(key, action, [], event.timestamp)
+
+                # Convert datetime timestamp to float
+                timestamp_float = (
+                    event.timestamp.timestamp() if event.timestamp else time.time()
+                )
+
+                return create_key_operation(key, action, [], timestamp_float)
 
         except Exception as e:
             print(f'Error converting event to operation: {e}')
+            # Fallback with current time if conversion fails
+            try:
+                if isinstance(event, MouseEvent):
+                    button = MouseButton.LEFT
+                    position = Position(x=int(event.x), y=int(event.y))
+                    return create_mouse_click_operation(button, position, time.time())
+                elif isinstance(event, KeyboardEvent):
+                    return create_key_operation('unknown', 'press', [], time.time())
+            except Exception:
+                pass
 
         return None
 
@@ -223,6 +259,7 @@ class RecordingController:
         self.is_recording = False
         self._recording_thread = None
         self._stop_event.clear()
+        self._processed_event_timestamps.clear()
 
     def get_current_recording_info(self) -> dict:
         """
