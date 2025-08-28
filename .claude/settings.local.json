@@ -33,7 +33,10 @@
       "mcp__serena__get_symbols_overview",
       "mcp__serena__find_symbol",
       "mcp__serena__write_memory",
-      "mcp__serena__think_about_collected_information"
+      "mcp__serena__think_about_collected_information",
+      "Bash(git push:*)",
+      "Bash(git mv:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

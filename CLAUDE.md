@@ -128,6 +128,7 @@ This workflow ensures consistent project management and maintains clean reposito
 
 - **全てのテストが成功すること** (例: `pytest`)
 - **Ruffのリンターとフォーマッターがエラーなくパスすること** (例: `ruff check .` および `ruff format . --check`)
+- Git にすべての変更がコミットされ、リモートにプッシュされていること
 
 これらのコマンドは、すべて終了コード0で完了しなければなりません。コマンド実行中の表示（ドットなど）ではなく、最終的な終了コードのみが成功の証拠となります。
 

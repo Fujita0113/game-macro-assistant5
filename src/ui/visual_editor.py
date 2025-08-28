@@ -629,3 +629,17 @@ class VisualEditor:
     def hide(self):
         """Hide the visual editor window."""
         self.root.withdraw()
+
+    def destroy(self):
+        """Properly destroy the visual editor and clean up resources."""
+        try:
+            if hasattr(self, 'root') and self.root:
+                self.root.destroy()
+                self.root = None
+        except Exception as e:
+            print(f'Warning: Error destroying visual editor: {e}')
+
+        # Clear references to prevent memory leaks
+        self.macro_recording = None
+        self.canvas = None
+        self.undo_manager = None
