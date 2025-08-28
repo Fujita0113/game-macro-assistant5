@@ -7,6 +7,7 @@ capture managers to provide unified recording control.
 
 import time
 import threading
+import traceback
 from typing import Optional, Callable
 
 from core.macro_data import (
@@ -54,6 +55,10 @@ class RecordingController:
             return False
 
         try:
+            # DEBUG: Log thread context
+            current_thread = threading.current_thread()
+            print(f'DEBUG: start_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})')
+            
             # Create new recording
             if recording_name is None:
                 recording_name = f'Recording_{int(time.time())}'
@@ -76,6 +81,7 @@ class RecordingController:
             self._recording_thread = threading.Thread(target=self._monitor_recording)
             self._recording_thread.daemon = True
             self._recording_thread.start()
+            print(f'DEBUG: Monitoring thread started: {self._recording_thread.name} (ID: {self._recording_thread.ident})')
 
             # Notify UI
             if self.on_recording_state_changed:
@@ -101,6 +107,10 @@ class RecordingController:
             return None
 
         try:
+            # DEBUG: Log thread context
+            current_thread = threading.current_thread()
+            print(f'DEBUG: stop_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})')
+            print(f'DEBUG: Recording thread is: {self._recording_thread.name if self._recording_thread else "None"} (ID: {self._recording_thread.ident if self._recording_thread else "None"})')
             # Stop recording
             self.is_recording = False
             self._stop_event.set()
@@ -110,7 +120,16 @@ class RecordingController:
 
             # Wait for monitoring thread to finish
             if self._recording_thread and self._recording_thread.is_alive():
-                self._recording_thread.join(timeout=1.0)
+                print(f'DEBUG: About to join recording thread from thread: {threading.current_thread().name}')
+                is_same_thread = threading.current_thread() == self._recording_thread
+                print(f'DEBUG: Is current thread same as recording thread? {is_same_thread}')
+                
+                if not is_same_thread:
+                    # Only join if we're not in the same thread (avoid "cannot join current thread" error)
+                    self._recording_thread.join(timeout=1.0)
+                    print(f'DEBUG: Thread join completed')
+                else:
+                    print(f'DEBUG: Skipping join - called from monitoring thread itself')
 
             # Get completed recording
             completed_recording = self.current_recording
@@ -132,12 +151,17 @@ class RecordingController:
 
         except Exception as e:
             print(f'Error stopping recording: {e}')
+            print(f'DEBUG: Exception details:')
+            traceback.print_exc()
             self._cleanup_recording()
             return None
 
     def _monitor_recording(self):
         """Monitor for recording completion and convert events."""
         try:
+            # DEBUG: Log monitoring thread context
+            current_thread = threading.current_thread()
+            print(f'DEBUG: _monitor_recording() running in thread: {current_thread.name} (ID: {current_thread.ident})')
             # Keep thread alive until recording stops
             while not self._stop_event.wait(0.1):
                 if not self.is_recording:
@@ -146,6 +170,7 @@ class RecordingController:
                 # Check if InputCaptureManager has stopped (ESC pressed)
                 if not self.input_capture.is_recording():
                     print('Recording stopped by ESC key')
+                    print(f'DEBUG: ESC detected in thread: {threading.current_thread().name} (ID: {threading.current_thread().ident})')
                     self.stop_recording()
                     break
 
@@ -178,6 +203,9 @@ class RecordingController:
     def _convert_event_to_operation(self, event) -> Optional[OperationBlock]:
         """Convert InputCaptureManager event to OperationBlock."""
         try:
+            # Convert datetime timestamp to float
+            timestamp = event.timestamp.timestamp() if hasattr(event.timestamp, 'timestamp') else event.timestamp
+            
             if isinstance(event, MouseEvent):
                 # Convert MouseEvent to our format
                 button_mapping = {
@@ -190,7 +218,7 @@ class RecordingController:
                     event.button.value.lower(), MouseButton.LEFT
                 )
                 position = Position(x=int(event.x), y=int(event.y))
-                return create_mouse_click_operation(button, position, event.timestamp)
+                return create_mouse_click_operation(button, position, timestamp)
 
             elif isinstance(event, KeyboardEvent):
                 # Convert KeyboardEvent to our format
@@ -202,7 +230,7 @@ class RecordingController:
                     if hasattr(event, 'char')
                     else 'unknown'
                 )
-                return create_key_operation(key, action, [], event.timestamp)
+                return create_key_operation(key, action, [], timestamp)
 
         except Exception as e:
             print(f'Error converting event to operation: {e}')
