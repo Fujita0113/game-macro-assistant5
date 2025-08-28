@@ -43,6 +43,9 @@ class RecordingController:
         self.on_recording_state_changed: Optional[Callable[[bool], None]] = None
         self.on_recording_completed: Optional[Callable[[MacroRecording], None]] = None
 
+        # ESC termination flag
+        self._esc_terminated = False
+
         # Visual editor
         self.visual_editor: Optional[VisualEditor] = None
 
@@ -118,8 +121,12 @@ class RecordingController:
             # Stop capture systems
             self.input_capture.stop_recording()  # InputCaptureManager uses stop_recording()
 
-            # Wait for monitoring thread to finish
-            if self._recording_thread and self._recording_thread.is_alive():
+            # Wait for monitoring thread to finish (but not if we're in the monitor thread)
+            if (
+                self._recording_thread
+                and self._recording_thread.is_alive()
+                and threading.current_thread() != self._recording_thread
+            ):
                 self._recording_thread.join(timeout=1.0)
 
             # Get completed recording
@@ -160,7 +167,10 @@ class RecordingController:
                 # Check if InputCaptureManager has stopped (ESC pressed)
                 if not self.input_capture.is_recording():
                     print('Recording stopped by ESC key')
-                    self.stop_recording()
+                    # Mark as ESC terminated and stop recording flag
+                    self._esc_terminated = True
+                    self.is_recording = False
+                    self._stop_event.set()
                     break
 
                 # Process new events from InputCaptureManager
@@ -168,6 +178,34 @@ class RecordingController:
 
         except Exception as e:
             print(f'Error in recording monitor: {e}')
+
+        # If ESC terminated, handle completion callbacks
+        if self._esc_terminated and self.current_recording:
+            try:
+                # Get completed recording before cleanup
+                completed_recording = self.current_recording
+
+                # Notify UI of state change
+                if self.on_recording_state_changed:
+                    self.on_recording_state_changed(False)
+
+                # Notify of completion
+                if self.on_recording_completed:
+                    self.on_recording_completed(completed_recording)
+
+                # Automatically open visual editor after recording completion
+                if completed_recording.operation_count > 0:
+                    self.open_visual_editor(completed_recording)
+
+                print(
+                    f'Recording stopped via ESC. Operations recorded: {completed_recording.operation_count}'
+                )
+
+            except Exception as e:
+                print(f'Error handling ESC termination: {e}')
+            finally:
+                # Clean up recording state
+                self._cleanup_recording()
 
     def _process_captured_events(self):
         """Process events captured by InputCaptureManager and convert to macro format."""
@@ -260,6 +298,7 @@ class RecordingController:
         self._recording_thread = None
         self._stop_event.clear()
         self._processed_event_timestamps.clear()
+        self._esc_terminated = False
 
     def get_current_recording_info(self) -> dict:
         """
