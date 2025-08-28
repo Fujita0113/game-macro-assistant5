@@ -322,9 +322,21 @@ class RecordingController:
             macro_recording: The macro recording to load in the editor
         """
         try:
-            # Create or reuse visual editor
-            if not self.visual_editor:
-                self.visual_editor = VisualEditor()
+            # Close existing visual editor if present
+            if self.visual_editor:
+                try:
+                    self.visual_editor.destroy()
+                    # Clean up the reference to prevent widget reuse issues
+                    self.visual_editor = None
+                except Exception as cleanup_error:
+                    print(
+                        f'Warning: Error cleaning up previous visual editor: {cleanup_error}'
+                    )
+                    # Force clear the reference anyway
+                    self.visual_editor = None
+
+            # Always create a new visual editor instance to avoid Tkinter widget issues
+            self.visual_editor = VisualEditor()
 
             # Load the macro into the editor
             self.visual_editor.load_macro(macro_recording)
@@ -338,12 +350,18 @@ class RecordingController:
 
         except Exception as e:
             print(f'Error opening visual editor: {e}')
+            # Reset the reference if creation failed
+            self.visual_editor = None
 
     def close_visual_editor(self):
         """Close the visual editor if it's open."""
         if self.visual_editor:
             try:
-                self.visual_editor.hide()
+                self.visual_editor.destroy()
+                # Clean up the reference after closing
+                self.visual_editor = None
                 print('Visual editor closed')
             except Exception as e:
                 print(f'Error closing visual editor: {e}')
+                # Clear reference even if closing failed
+                self.visual_editor = None

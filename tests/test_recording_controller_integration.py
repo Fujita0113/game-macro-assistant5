@@ -76,7 +76,7 @@ class TestRecordingControllerVisualEditorIntegration:
 
     @patch('ui.recording_controller.VisualEditor')
     def test_reuse_existing_visual_editor(self, mock_visual_editor_class):
-        """Test reusing existing visual editor instance."""
+        """Test creating new visual editor instances to avoid Tkinter issues."""
         # Setup mocks
         mock_editor = Mock()
         mock_visual_editor_class.return_value = mock_editor
@@ -86,9 +86,11 @@ class TestRecordingControllerVisualEditorIntegration:
         controller.open_visual_editor(self.test_macro)
         controller.open_visual_editor(self.test_macro)
 
-        # Verify visual editor was created only once
-        mock_visual_editor_class.assert_called_once()
-        # But load_macro and show should be called twice
+        # Verify visual editor was created twice (new behavior to avoid Tkinter issues)
+        assert mock_visual_editor_class.call_count == 2
+        # First editor should have been destroyed before creating second
+        mock_editor.destroy.assert_called()
+        # Both instances should have load_macro and show called
         assert mock_editor.load_macro.call_count == 2
         assert mock_editor.show.call_count == 2
 
@@ -106,8 +108,8 @@ class TestRecordingControllerVisualEditorIntegration:
         # Close editor
         controller.close_visual_editor()
 
-        # Verify hide was called
-        mock_editor.hide.assert_called_once()
+        # Verify destroy was called (new behavior for proper cleanup)
+        mock_editor.destroy.assert_called_once()
 
     def test_close_visual_editor_when_none(self):
         """Test closing visual editor when none exists."""
