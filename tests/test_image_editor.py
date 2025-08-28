@@ -139,7 +139,10 @@ class TestImageEditor:
         tk_root.update()
 
         # Mock the messagebox to ensure no error is shown
-        with patch('tkinter.messagebox.showerror') as mock_error:
+        with (
+            patch('tkinter.messagebox.showerror') as mock_error,
+            patch('tkinter.messagebox.showinfo'),
+        ):
             # Create mock event objects
             class MockEvent:
                 def __init__(self, x, y):
@@ -161,6 +164,56 @@ class TestImageEditor:
 
             # Should not have shown error message
             mock_error.assert_not_called()
+
+    def test_ok_without_selection_shows_error(self, tk_root):
+        """Test that clicking OK without any selection shows error message."""
+        from src.ui.image_editor import ImageEditor
+
+        editor = ImageEditor(tk_root, self.test_image)
+        tk_root.update()
+
+        # Mock the messagebox to capture error messages
+        with patch('tkinter.messagebox.showerror') as mock_error:
+            # Try to click OK button without making any selection
+            editor._on_ok()
+
+            # Should show error message for no selection
+            mock_error.assert_called_once()
+            args = mock_error.call_args
+            assert '選択' in str(args)
+
+    def test_ok_with_selection_shows_status_message(self, tk_root):
+        """Test that clicking OK with valid selection shows status message."""
+        from src.ui.image_editor import ImageEditor
+
+        editor = ImageEditor(tk_root, self.test_image)
+        tk_root.update()
+
+        # Mock the messagebox to capture status messages
+        with patch('tkinter.messagebox.showinfo') as mock_info:
+            # Create mock event objects
+            class MockEvent:
+                def __init__(self, x, y):
+                    self.x = x
+                    self.y = y
+
+            # Create a valid selection (5x5 pixels)
+            press_event = MockEvent(10, 10)
+            editor._on_mouse_press(press_event)
+
+            drag_event = MockEvent(15, 15)
+            editor._on_mouse_drag(drag_event)
+
+            release_event = MockEvent(15, 15)
+            editor._on_mouse_release(release_event)
+
+            # Click OK button
+            editor._on_ok()
+
+            # Should show status message
+            mock_info.assert_called_once()
+            args = mock_info.call_args
+            assert '選択領域を保存しました' in str(args)
 
 
 if __name__ == '__main__':

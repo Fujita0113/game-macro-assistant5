@@ -122,6 +122,10 @@ When a user reports that implementation is completed, follow this standardized w
 
 This workflow ensures consistent project management and maintains clean repository state.
 
+## Troubleshooting
+
+For technical issues and error resolution, see documentation in `docs/troubleshooting/`.
+
 ## Definition of Done
 
 あるタスクが完了したと見なされるのは、以下の条件がすべて満たされた場合のみです。

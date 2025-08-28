@@ -42,7 +42,10 @@
       "Bash(venvScripts:*)",
       "Bash(.venvScriptsactivate.bat)",
       "Bash(echo $PATH)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__find_file",
+      "mcp__serena__replace_symbol_body"
     ],
     "deny": [],
     "ask": []
