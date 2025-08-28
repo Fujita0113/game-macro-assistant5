@@ -381,6 +381,9 @@ def setup_window_controller_integration(
         operation_count = recording_data.operation_count if recording_data else 0
         window.show_recording_completed(operation_count)
 
+        # Visual editor launch is now handled by RecordingController.open_visual_editor()
+        # This prevents duplicate editor windows from opening
+
         # Print recording data to console for testing
         if recording_data:
             print('\n=== Recording Completed ===')
