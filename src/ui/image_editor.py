@@ -48,7 +48,7 @@ class ImageEditor(tk.Toplevel):
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         # Convert PIL image to PhotoImage for display
-        self.photo_image = ImageTk.PhotoImage(self.image)
+        self.photo_image = ImageTk.PhotoImage(self.image, master=self.canvas)
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo_image)
 
         # Configure canvas size
