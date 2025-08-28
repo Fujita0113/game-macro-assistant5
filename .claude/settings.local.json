@@ -36,7 +36,13 @@
       "mcp__serena__think_about_collected_information",
       "Bash(git push:*)",
       "Bash(git mv:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(where python)",
+      "Bash(py:*)",
+      "Bash(venvScripts:*)",
+      "Bash(.venvScriptsactivate.bat)",
+      "Bash(echo $PATH)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

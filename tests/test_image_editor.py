@@ -24,12 +24,13 @@ if sys.platform == 'win32':
 _tk_session = None
 _has_display = None
 
+
 def _check_display():
     """Check if display is available for Tkinter."""
     global _has_display, _tk_session
     if _has_display is not None:
         return _has_display
-    
+
     try:
         _tk_session = tk.Tk()
         _tk_session.withdraw()
@@ -38,6 +39,7 @@ def _check_display():
     except tk.TclError:
         _has_display = False
         return False
+
 
 def _cleanup_tk_session():
     """Clean up the global Tkinter session."""
@@ -49,45 +51,49 @@ def _cleanup_tk_session():
             pass
         _tk_session = None
 
+
 # Initialize display check
 _check_display()
 
 # Register cleanup function
 import atexit
+
 atexit.register(_cleanup_tk_session)
+
 
 # pytest fixture to provide fresh Tk environment for each test
 @pytest.fixture
 def tk_root():
     """Provide a clean Tk environment for each test."""
     global _tk_session
-    
+
     if not _has_display:
         pytest.skip('No display available')
-    
+
     # Ensure we have a valid session
     if not _tk_session or not _tk_session.winfo_exists():
         _tk_session = tk.Tk()
         _tk_session.withdraw()
-    
+
     # Clean up any existing child widgets
     for child in _tk_session.winfo_children():
         try:
             child.destroy()
         except tk.TclError:
             pass
-    
+
     # Set as default root for this test
     tk._default_root = _tk_session
-    
+
     yield _tk_session
-    
+
     # Post-test cleanup
     for child in _tk_session.winfo_children():
         try:
             child.destroy()
         except tk.TclError:
             pass
+
 
 pytestmark = pytest.mark.skipif(not _has_display, reason='No display available')
 
@@ -129,18 +135,22 @@ def test_rectangle_selection_functionality(tk_root):
     # Simulate mouse press at (10, 10)
     press_event = MockEvent(10, 10)
     editor._on_mouse_press(press_event)
-    
+
     # Simulate mouse drag to (50, 50)
     drag_event = MockEvent(50, 50)
     editor._on_mouse_drag(drag_event)
-    
+
     # Simulate mouse release at (50, 50)
     release_event = MockEvent(50, 50)
     editor._on_mouse_release(release_event)
 
     # Should have created a selection rectangle
-    assert editor.selection_coords is not None, f"Expected selection_coords, got: {editor.selection_coords}"
-    assert editor.selection_coords == (10, 10, 50, 50), f"Expected (10, 10, 50, 50), got: {editor.selection_coords}"
+    assert editor.selection_coords is not None, (
+        f'Expected selection_coords, got: {editor.selection_coords}'
+    )
+    assert editor.selection_coords == (10, 10, 50, 50), (
+        f'Expected (10, 10, 50, 50), got: {editor.selection_coords}'
+    )
 
 
 def test_selection_area_highlight_display(tk_root):
@@ -197,10 +207,10 @@ def test_minimum_selection_size_error(tk_root):
         # Create a selection smaller than 5x5 pixels
         press_event = MockEvent(10, 10)
         editor._on_mouse_press(press_event)
-        
+
         drag_event = MockEvent(12, 12)  # Only 2x2 pixels
         editor._on_mouse_drag(drag_event)
-        
+
         release_event = MockEvent(12, 12)
         editor._on_mouse_release(release_event)
 
@@ -232,10 +242,10 @@ def test_no_error_for_valid_selection_size(tk_root):
         # Create a selection exactly 5x5 pixels
         press_event = MockEvent(10, 10)
         editor._on_mouse_press(press_event)
-        
+
         drag_event = MockEvent(15, 15)  # 5x5 pixels
         editor._on_mouse_drag(drag_event)
-        
+
         release_event = MockEvent(15, 15)
         editor._on_mouse_release(release_event)
 
