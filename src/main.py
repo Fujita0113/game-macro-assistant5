@@ -313,6 +313,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ui.main_window import MainWindow  # noqa: E402
 from ui.recording_controller import RecordingController  # noqa: E402
+from ui.visual_editor import VisualEditor  # noqa: E402
 
 
 def main():
@@ -380,6 +381,17 @@ def setup_window_controller_integration(
         """Handle recording completion."""
         operation_count = recording_data.operation_count if recording_data else 0
         window.show_recording_completed(operation_count)
+
+        # Launch visual editor automatically after recording completion
+        if recording_data and recording_data.operation_count > 0:
+            print('\n=== Launching Visual Editor ===')
+            try:
+                visual_editor = VisualEditor()
+                visual_editor.load_macro(recording_data)
+                visual_editor.show()
+                print('Visual editor opened successfully')
+            except Exception as e:
+                print(f'Error launching visual editor: {e}')
 
         # Print recording data to console for testing
         if recording_data:
