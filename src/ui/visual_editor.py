@@ -9,6 +9,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import List, Optional, Callable
 from copy import deepcopy
+from PIL import Image
+import io
 
 try:
     from ..core.macro_data import OperationBlock, OperationType, MacroRecording
@@ -42,6 +44,9 @@ class DragDropCanvas(tk.Canvas):
         self.bind('<B1-Motion>', self._on_drag)
         self.bind('<ButtonRelease-1>', self._on_drop)
         self.bind('<Motion>', self._on_motion)
+
+        # Bind double-click for image editing
+        self.bind('<Double-Button-1>', self._on_double_click)
 
         # Configure scrollable area
         self.configure(scrollregion=(0, 0, 400, 600))
@@ -302,6 +307,78 @@ class DragDropCanvas(tk.Canvas):
         self.delete('all')
         self.blocks.clear()
         self._update_scroll_region()
+
+    def _on_double_click(self, event):
+        """Handle double-click to open image editor for screen condition blocks."""
+        item = self.find_closest(event.x, event.y)[0]
+        tags = self.gettags(item)
+
+        # Check if clicked on a block
+        if 'block' in tags:
+            block_tag = [tag for tag in tags if tag.startswith('block_')]
+            if block_tag:
+                operation_id = block_tag[0][6:]  # Remove "block_" prefix
+
+                # Find the block data
+                for block in self.blocks:
+                    if block['operation'].id == operation_id:
+                        operation = block['operation']
+
+                        # Only open image editor for screen condition blocks with image data
+                        if (
+                            operation.operation_type == OperationType.SCREEN_CONDITION
+                            and operation.screen_condition
+                            and operation.screen_condition.image_data
+                        ):
+                            self._open_image_editor(operation)
+                        break
+
+    def _open_image_editor(self, operation: OperationBlock):
+        """Open the image editor for a screen condition operation."""
+        try:
+            # Import here to avoid circular imports
+            from .image_editor import ImageEditor
+
+            # Convert image data to PIL Image
+            image_data = operation.screen_condition.image_data
+            image = Image.open(io.BytesIO(image_data))
+
+            # Create and show image editor
+            editor = ImageEditor(self.master, image)
+
+            # Wait for the editor to close and get the result
+            self.master.wait_window(editor)
+
+            # If editor has selection coordinates, update the operation
+            if hasattr(editor, 'selection_coords') and editor.selection_coords:
+                x1, y1, x2, y2 = editor.selection_coords
+                width = x2 - x1
+                height = y2 - y1
+
+                # Update the screen condition region
+                operation.screen_condition.region = (x1, y1, width, height)
+
+                # Update the display text to reflect the change
+                self._redraw_all_blocks()
+
+                # Notify parent of changes
+                if hasattr(self, '_reorder_callback') and self._reorder_callback:
+                    # Use the callback to notify of changes
+                    # Since we're not reordering, we'll pass the same index twice
+                    block_index = next(
+                        i
+                        for i, b in enumerate(self.blocks)
+                        if b['operation'].id == operation.id
+                    )
+                    self._reorder_callback(block_index, block_index)
+
+        except Exception as e:
+            # Handle any errors during image editing
+            import tkinter.messagebox as messagebox
+
+            messagebox.showerror(
+                'エラー', f'画像編集中にエラーが発生しました: {str(e)}'
+            )
 
 
 class UndoRedoManager:
