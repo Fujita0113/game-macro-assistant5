@@ -1,163 +1,219 @@
 """
-Tests for the image editor functionality.
+Simplified tests for the image editor functionality.
 
 This module tests the image editing window that allows users to select
 rectangular areas from screenshots for macro condition checking.
 """
 
 import pytest
-import tkinter as tk
 from unittest.mock import patch
 from PIL import Image
 
-# Skip all tests if running in headless environment (like CI)
-try:
-    root = tk.Tk()
-    root.destroy()
-    _has_display = True
-except tk.TclError:
-    _has_display = False
 
-pytestmark = pytest.mark.skipif(not _has_display, reason='No display available')
+class TestImageEditor:
+    """Test cases for ImageEditor with simplified Tkinter management."""
 
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.test_image = Image.new('RGB', (100, 100), color='red')
 
-def test_image_editor_window_initialization():
-    """Test that ImageEditor window initializes correctly."""
-    # This test will fail until we implement the ImageEditor class
-    from src.ui.image_editor import ImageEditor
+    def test_image_editor_window_initialization(self, tk_root):
+        """Test that ImageEditor window initializes correctly."""
+        from src.ui.image_editor import ImageEditor
 
-    root = tk.Tk()
-    test_image = Image.new('RGB', (100, 100), color='red')
+        editor = ImageEditor(tk_root, self.test_image)
 
-    editor = ImageEditor(root, test_image)
+        # Should have a title
+        assert editor.title() == '画像編集'
 
-    # Should have a title
-    assert editor.title() == '画像編集'
+        # Should be properly initialized
+        assert editor is not None
 
-    # Should be properly initialized
-    assert editor is not None
+    def test_rectangle_selection_functionality(self, tk_root):
+        """Test that mouse drag creates a rectangle selection."""
+        from src.ui.image_editor import ImageEditor
 
-    root.destroy()
+        editor = ImageEditor(tk_root, self.test_image)
 
+        # Update the window to ensure proper initialization
+        tk_root.update()
+        editor.update()
 
-def test_rectangle_selection_functionality():
-    """Test that mouse drag creates a rectangle selection."""
-    from src.ui.image_editor import ImageEditor
+        # Create mock event objects with x, y coordinates
+        class MockEvent:
+            def __init__(self, x, y):
+                self.x = x
+                self.y = y
 
-    root = tk.Tk()
-    test_image = Image.new('RGB', (100, 100), color='red')
+        # Simulate mouse press at (10, 10)
+        press_event = MockEvent(10, 10)
+        editor._on_mouse_press(press_event)
 
-    editor = ImageEditor(root, test_image)
+        # Simulate mouse drag to (50, 50)
+        drag_event = MockEvent(50, 50)
+        editor._on_mouse_drag(drag_event)
 
-    # Simulate mouse drag for rectangle selection
-    # Update the window to ensure proper initialization
-    root.update()
+        # Simulate mouse release at (50, 50)
+        release_event = MockEvent(50, 50)
+        editor._on_mouse_release(release_event)
 
-    # Start drag at (10, 10)
-    editor.canvas.event_generate('<Button-1>', x=10, y=10)
-    root.update()
-    # Drag to (50, 50)
-    editor.canvas.event_generate('<B1-Motion>', x=50, y=50)
-    root.update()
-    # End drag
-    editor.canvas.event_generate('<ButtonRelease-1>', x=50, y=50)
-    root.update()
+        # Should have created a selection rectangle
+        assert editor.selection_coords is not None, (
+            f'Expected selection_coords, got: {editor.selection_coords}'
+        )
+        assert editor.selection_coords == (
+            10,
+            10,
+            50,
+            50,
+        ), f'Expected (10, 10, 50, 50), got: {editor.selection_coords}'
 
-    # Should have created a selection rectangle
-    assert editor.selection_coords is not None
-    assert editor.selection_coords == (10, 10, 50, 50)
+    def test_selection_area_highlight_display(self, tk_root):
+        """Test that selection area is properly highlighted."""
+        from src.ui.image_editor import ImageEditor
 
-    root.destroy()
+        editor = ImageEditor(tk_root, self.test_image)
+        tk_root.update()
 
+        # Create mock event objects
+        class MockEvent:
+            def __init__(self, x, y):
+                self.x = x
+                self.y = y
 
-def test_selection_area_highlight_display():
-    """Test that selection area is properly highlighted."""
-    from src.ui.image_editor import ImageEditor
+        # Start selection at (10, 10)
+        press_event = MockEvent(10, 10)
+        editor._on_mouse_press(press_event)
 
-    root = tk.Tk()
-    test_image = Image.new('RGB', (100, 100), color='red')
+        # Should not have selection rectangle yet
+        assert editor.selection_rect is None
 
-    editor = ImageEditor(root, test_image)
-    root.update()
+        # Drag to (50, 50) to create selection
+        drag_event = MockEvent(50, 50)
+        editor._on_mouse_drag(drag_event)
 
-    # Start selection
-    editor.canvas.event_generate('<Button-1>', x=10, y=10)
-    root.update()
+        # Should now have selection rectangle visible
+        assert editor.selection_rect is not None
 
-    # Should not have selection rectangle yet
-    assert editor.selection_rect is None
+        # Check rectangle coordinates
+        rect_coords = editor.canvas.coords(editor.selection_rect)
+        assert rect_coords == [10, 10, 50, 50]
 
-    # Drag to create selection
-    editor.canvas.event_generate('<B1-Motion>', x=50, y=50)
-    root.update()
+    def test_minimum_selection_size_error(self, tk_root):
+        """Test that selections smaller than 5x5 pixels show error message."""
+        from src.ui.image_editor import ImageEditor
 
-    # Should now have selection rectangle visible
-    assert editor.selection_rect is not None
+        editor = ImageEditor(tk_root, self.test_image)
+        tk_root.update()
 
-    # Check if rectangle is properly created on canvas
-    rect_coords = editor.canvas.coords(editor.selection_rect)
-    assert rect_coords == [10, 10, 50, 50]
+        # Mock the messagebox to capture error messages
+        with patch('tkinter.messagebox.showerror') as mock_error:
+            # Create mock event objects
+            class MockEvent:
+                def __init__(self, x, y):
+                    self.x = x
+                    self.y = y
 
-    root.destroy()
+            # Create a selection smaller than 5x5 pixels
+            press_event = MockEvent(10, 10)
+            editor._on_mouse_press(press_event)
 
+            drag_event = MockEvent(12, 12)  # Only 2x2 pixels
+            editor._on_mouse_drag(drag_event)
 
-def test_minimum_selection_size_error():
-    """Test that selections smaller than 5x5 pixels show error message."""
-    from src.ui.image_editor import ImageEditor
+            release_event = MockEvent(12, 12)
+            editor._on_mouse_release(release_event)
 
-    root = tk.Tk()
-    test_image = Image.new('RGB', (100, 100), color='red')
+            # Try to click OK button
+            editor._on_ok()
 
-    editor = ImageEditor(root, test_image)
-    root.update()
+            # Should show error message
+            mock_error.assert_called_once()
+            assert '5x5ピクセル以上' in str(mock_error.call_args)
 
-    # Mock the messagebox to capture error messages
-    with patch('tkinter.messagebox.showerror') as mock_error:
-        # Create a selection smaller than 5x5 pixels
-        editor.canvas.event_generate('<Button-1>', x=10, y=10)
-        root.update()
-        editor.canvas.event_generate('<B1-Motion>', x=12, y=12)  # Only 2x2 pixels
-        root.update()
-        editor.canvas.event_generate('<ButtonRelease-1>', x=12, y=12)
-        root.update()
+    def test_no_error_for_valid_selection_size(self, tk_root):
+        """Test that selections 5x5 pixels or larger do not show error."""
+        from src.ui.image_editor import ImageEditor
 
-        # Try to click OK button
-        editor._on_ok()
+        editor = ImageEditor(tk_root, self.test_image)
+        tk_root.update()
 
-        # Should have shown error message
-        mock_error.assert_called_once()
-        assert '5x5ピクセル以上' in str(mock_error.call_args)
+        # Mock the messagebox to ensure no error is shown
+        with (
+            patch('tkinter.messagebox.showerror') as mock_error,
+            patch('tkinter.messagebox.showinfo'),
+        ):
+            # Create mock event objects
+            class MockEvent:
+                def __init__(self, x, y):
+                    self.x = x
+                    self.y = y
 
-    root.destroy()
+            # Create a selection exactly 5x5 pixels
+            press_event = MockEvent(10, 10)
+            editor._on_mouse_press(press_event)
 
+            drag_event = MockEvent(15, 15)  # 5x5 pixels
+            editor._on_mouse_drag(drag_event)
 
-def test_no_error_for_valid_selection_size():
-    """Test that selections 5x5 pixels or larger do not show error."""
-    from src.ui.image_editor import ImageEditor
+            release_event = MockEvent(15, 15)
+            editor._on_mouse_release(release_event)
 
-    root = tk.Tk()
-    test_image = Image.new('RGB', (100, 100), color='red')
+            # Try to click OK button
+            editor._on_ok()
 
-    editor = ImageEditor(root, test_image)
-    root.update()
+            # Should not have shown error message
+            mock_error.assert_not_called()
 
-    # Mock the messagebox to ensure no error is shown
-    with patch('tkinter.messagebox.showerror') as mock_error:
-        # Create a selection exactly 5x5 pixels
-        editor.canvas.event_generate('<Button-1>', x=10, y=10)
-        root.update()
-        editor.canvas.event_generate('<B1-Motion>', x=15, y=15)  # 5x5 pixels
-        root.update()
-        editor.canvas.event_generate('<ButtonRelease-1>', x=15, y=15)
-        root.update()
+    def test_ok_without_selection_shows_error(self, tk_root):
+        """Test that clicking OK without any selection shows error message."""
+        from src.ui.image_editor import ImageEditor
 
-        # Try to click OK button
-        editor._on_ok()
+        editor = ImageEditor(tk_root, self.test_image)
+        tk_root.update()
 
-        # Should not have shown error message
-        mock_error.assert_not_called()
+        # Mock the messagebox to capture error messages
+        with patch('tkinter.messagebox.showerror') as mock_error:
+            # Try to click OK button without making any selection
+            editor._on_ok()
 
-    root.destroy()
+            # Should show error message for no selection
+            mock_error.assert_called_once()
+            args = mock_error.call_args
+            assert '選択' in str(args)
+
+    def test_ok_with_selection_shows_status_message(self, tk_root):
+        """Test that clicking OK with valid selection shows status message."""
+        from src.ui.image_editor import ImageEditor
+
+        editor = ImageEditor(tk_root, self.test_image)
+        tk_root.update()
+
+        # Mock the messagebox to capture status messages
+        with patch('tkinter.messagebox.showinfo') as mock_info:
+            # Create mock event objects
+            class MockEvent:
+                def __init__(self, x, y):
+                    self.x = x
+                    self.y = y
+
+            # Create a valid selection (5x5 pixels)
+            press_event = MockEvent(10, 10)
+            editor._on_mouse_press(press_event)
+
+            drag_event = MockEvent(15, 15)
+            editor._on_mouse_drag(drag_event)
+
+            release_event = MockEvent(15, 15)
+            editor._on_mouse_release(release_event)
+
+            # Click OK button
+            editor._on_ok()
+
+            # Should show status message
+            mock_info.assert_called_once()
+            args = mock_info.call_args
+            assert '選択領域を保存しました' in str(args)
 
 
 if __name__ == '__main__':

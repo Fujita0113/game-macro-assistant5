@@ -67,8 +67,10 @@ class RecordingController:
         try:
             # DEBUG: Log thread context
             current_thread = threading.current_thread()
-            print(f'DEBUG: start_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})')
-            
+            print(
+                f'DEBUG: start_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})'
+            )
+
             # Create new recording
             if recording_name is None:
                 recording_name = f'Recording_{int(time.time())}'
@@ -94,7 +96,9 @@ class RecordingController:
             self._recording_thread = threading.Thread(target=self._monitor_recording)
             self._recording_thread.daemon = True
             self._recording_thread.start()
-            print(f'DEBUG: Monitoring thread started: {self._recording_thread.name} (ID: {self._recording_thread.ident})')
+            print(
+                f'DEBUG: Monitoring thread started: {self._recording_thread.name} (ID: {self._recording_thread.ident})'
+            )
 
             # Notify UI
             if self.on_recording_state_changed:
@@ -122,8 +126,12 @@ class RecordingController:
         try:
             # DEBUG: Log thread context
             current_thread = threading.current_thread()
-            print(f'DEBUG: stop_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})')
-            print(f'DEBUG: Recording thread is: {self._recording_thread.name if self._recording_thread else "None"} (ID: {self._recording_thread.ident if self._recording_thread else "None"})')
+            print(
+                f'DEBUG: stop_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})'
+            )
+            print(
+                f'DEBUG: Recording thread is: {self._recording_thread.name if self._recording_thread else "None"} (ID: {self._recording_thread.ident if self._recording_thread else "None"})'
+            )
             # Stop recording
             self.is_recording = False
             self._stop_event.set()
@@ -166,7 +174,9 @@ class RecordingController:
         try:
             # DEBUG: Log monitoring thread context
             current_thread = threading.current_thread()
-            print(f'DEBUG: _monitor_recording() running in thread: {current_thread.name} (ID: {current_thread.ident})')
+            print(
+                f'DEBUG: _monitor_recording() running in thread: {current_thread.name} (ID: {current_thread.ident})'
+            )
             # Keep thread alive until recording stops
             while not self._stop_event.wait(0.1):
                 if not self.is_recording:
@@ -232,8 +242,12 @@ class RecordingController:
         """Convert InputCaptureManager event to OperationBlock."""
         try:
             # Convert datetime timestamp to float
-            timestamp = event.timestamp.timestamp() if hasattr(event.timestamp, 'timestamp') else event.timestamp
-            
+            timestamp = (
+                event.timestamp.timestamp()
+                if hasattr(event.timestamp, 'timestamp')
+                else event.timestamp
+            )
+
             if isinstance(event, MouseEvent):
                 # Convert MouseEvent to our format
                 button_mapping = {

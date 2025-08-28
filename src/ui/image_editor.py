@@ -48,7 +48,7 @@ class ImageEditor(tk.Toplevel):
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         # Convert PIL image to PhotoImage for display
-        self.photo_image = ImageTk.PhotoImage(self.image)
+        self.photo_image = ImageTk.PhotoImage(self.image, master=self.canvas)
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo_image)
 
         # Configure canvas size
@@ -119,18 +119,27 @@ class ImageEditor(tk.Toplevel):
     def _on_ok(self):
         """Handle OK button click."""
         # Check if we have a valid selection
-        if self.selection_coords:
-            x1, y1, x2, y2 = self.selection_coords
-            width = x2 - x1
-            height = y2 - y1
+        if not self.selection_coords:
+            messagebox.showerror(
+                '選択エラー',
+                '画像内で領域を選択してください。',
+            )
+            return
 
-            # Check minimum size requirement (5x5 pixels)
-            if width < 5 or height < 5:
-                messagebox.showerror(
-                    '選択エラー',
-                    '選択領域は5x5ピクセル以上である必要があります。\n'
-                    f'現在の選択: {width}x{height}ピクセル',
-                )
-                return
+        x1, y1, x2, y2 = self.selection_coords
+        width = x2 - x1
+        height = y2 - y1
+
+        # Check minimum size requirement (5x5 pixels)
+        if width < 5 or height < 5:
+            messagebox.showerror(
+                '選択エラー',
+                '選択領域は5x5ピクセル以上である必要があります。\n'
+                f'現在の選択: {width}x{height}ピクセル',
+            )
+            return
+
+        # Show status message for successful selection
+        messagebox.showinfo('保存完了', '選択領域を保存しました')
 
         self.destroy()
