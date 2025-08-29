@@ -8,6 +8,7 @@ capture managers to provide unified recording control.
 import time
 import threading
 import traceback
+import logging
 from typing import Optional, Callable
 
 from core.macro_data import (
@@ -22,6 +23,8 @@ from core.input_capture import InputCaptureManager
 from core.screen_capture import ScreenCaptureManager
 from core.events import MouseEvent, KeyboardEvent, EventType
 from .visual_editor import VisualEditor
+
+logger = logging.getLogger(__name__)
 
 
 class RecordingController:
@@ -65,10 +68,10 @@ class RecordingController:
             return False
 
         try:
-            # DEBUG: Log thread context
+            # Log thread context for debugging
             current_thread = threading.current_thread()
-            print(
-                f'DEBUG: start_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})'
+            logger.debug(
+                f'start_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})'
             )
 
             # Create new recording
@@ -96,8 +99,8 @@ class RecordingController:
             self._recording_thread = threading.Thread(target=self._monitor_recording)
             self._recording_thread.daemon = True
             self._recording_thread.start()
-            print(
-                f'DEBUG: Monitoring thread started: {self._recording_thread.name} (ID: {self._recording_thread.ident})'
+            logger.debug(
+                f'Monitoring thread started: {self._recording_thread.name} (ID: {self._recording_thread.ident})'
             )
 
             # Notify UI
@@ -124,13 +127,13 @@ class RecordingController:
             return None
 
         try:
-            # DEBUG: Log thread context
+            # Log thread context for debugging
             current_thread = threading.current_thread()
-            print(
-                f'DEBUG: stop_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})'
+            logger.debug(
+                f'stop_recording() called from thread: {current_thread.name} (ID: {current_thread.ident})'
             )
-            print(
-                f'DEBUG: Recording thread is: {self._recording_thread.name if self._recording_thread else "None"} (ID: {self._recording_thread.ident if self._recording_thread else "None"})'
+            logger.debug(
+                f'Recording thread is: {self._recording_thread.name if self._recording_thread else "None"} (ID: {self._recording_thread.ident if self._recording_thread else "None"})'
             )
             # Stop recording
             self.is_recording = False
@@ -164,7 +167,7 @@ class RecordingController:
 
         except Exception as e:
             print(f'Error stopping recording: {e}')
-            print('DEBUG: Exception details:')
+            logger.debug('Exception details:')
             traceback.print_exc()
             self._cleanup_recording()
             return None
@@ -172,10 +175,10 @@ class RecordingController:
     def _monitor_recording(self):
         """Monitor for recording completion and convert events."""
         try:
-            # DEBUG: Log monitoring thread context
+            # Log monitoring thread context for debugging
             current_thread = threading.current_thread()
-            print(
-                f'DEBUG: _monitor_recording() running in thread: {current_thread.name} (ID: {current_thread.ident})'
+            logger.debug(
+                f'_monitor_recording() running in thread: {current_thread.name} (ID: {current_thread.ident})'
             )
             # Keep thread alive until recording stops
             while not self._stop_event.wait(0.1):

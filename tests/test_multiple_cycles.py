@@ -6,18 +6,18 @@ Test script for multiple recording cycles to verify visual editor reuse fix.
 import time
 import sys
 import os
-import tkinter as tk
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add src to path for imports  
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from ui.recording_controller import RecordingController
-from core.macro_data import (
+from src.ui.recording_controller import RecordingController
+from src.core.macro_data import (
     MacroRecording,
     create_mouse_click_operation,
     create_key_operation,
+    MouseButton,
+    Position,
 )
-from core.macro_data import MouseButton, Position
 
 
 def create_test_recording(name: str, operation_count: int = 3) -> MacroRecording:
@@ -48,13 +48,9 @@ def create_test_recording(name: str, operation_count: int = 3) -> MacroRecording
     return recording
 
 
-def test_multiple_visual_editor_cycles():
+def test_multiple_visual_editor_cycles(tk_root):
     """Test opening visual editor multiple times to verify no widget reuse issues."""
     print('=== Testing Multiple Visual Editor Cycles ===')
-
-    # Create Tkinter root for the test
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
 
     try:
         controller = RecordingController()
@@ -87,28 +83,19 @@ def test_multiple_visual_editor_cycles():
 
             except Exception as e:
                 print(f'[FAIL] Error in cycle {cycle + 1}: {e}')
-                return False
+                assert False, f'Error in cycle {cycle + 1}: {e}'
 
         print('\n=== All cycles completed successfully! ===')
-        return True
+        # Test completed successfully, no return needed
 
     except Exception as e:
         print(f'[FAIL] Test failed: {e}')
-        return False
-
-    finally:
-        try:
-            root.destroy()
-        except Exception:
-            pass
+        assert False, f'Test failed: {e}'
 
 
-def test_recording_completion_cycles():
+def test_recording_completion_cycles(tk_root):
     """Test recording completion handler multiple times."""
     print('\n=== Testing Recording Completion Cycles ===')
-
-    root = tk.Tk()
-    root.withdraw()
 
     try:
         controller = RecordingController()
@@ -133,20 +120,14 @@ def test_recording_completion_cycles():
 
             except Exception as e:
                 print(f'[FAIL] Error in completion cycle {cycle + 1}: {e}')
-                return False
+                assert False, f'Error in completion cycle {cycle + 1}: {e}'
 
         print('\n=== All completion cycles successful! ===')
-        return True
+        # Test completed successfully, no return needed
 
     except Exception as e:
         print(f'[FAIL] Completion test failed: {e}')
-        return False
-
-    finally:
-        try:
-            root.destroy()
-        except Exception:
-            pass
+        assert False, f'Completion test failed: {e}'
 
 
 if __name__ == '__main__':
