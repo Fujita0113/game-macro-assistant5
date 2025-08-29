@@ -7,13 +7,17 @@ ensuring that fixes are properly validated and preventing future regressions.
 """
 
 import pytest
-import tkinter as tk
 import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from PIL import Image, ImageDraw
 import io
 
-from src.core.macro_data import OperationBlock, OperationType, ScreenCondition, MacroRecording
+from src.core.macro_data import (
+    OperationBlock,
+    OperationType,
+    ScreenCondition,
+    MacroRecording,
+)
 
 
 class TestSmokeTestRegressionErrors:
@@ -52,7 +56,7 @@ class TestSmokeTestRegressionErrors:
     def test_visual_editor_callback_parameter_error(self, tk_root):
         """
         FAILING TEST: VisualEditor作成時にcallbackパラメータを使用するとエラーになることを確認
-        
+
         修正前: TypeError: VisualEditor.__init__() got an unexpected keyword argument 'callback'
         """
         from src.ui.visual_editor import VisualEditor
@@ -60,30 +64,30 @@ class TestSmokeTestRegressionErrors:
         # This should fail exactly as in the smoke test
         with pytest.raises(TypeError) as exc_info:
             VisualEditor(tk_root, callback=lambda x, y: None)
-        
+
         assert "unexpected keyword argument 'callback'" in str(exc_info.value)
 
     def test_load_macro_with_operation_list_error(self, tk_root):
         """
         FAILING TEST: load_macroにList[OperationBlock]を渡すとエラーになることを確認
-        
+
         修正前: AttributeError: 'list' object has no attribute 'operations'
         """
         from src.ui.visual_editor import VisualEditor
 
         editor = VisualEditor(tk_root)
-        
+
         # This should fail when trying to load a list instead of MacroRecording
         with pytest.raises(AttributeError) as exc_info:
             editor.load_macro([self.test_operation])  # List instead of MacroRecording
-        
+
         # The error should be about missing 'operations' attribute on list
         assert "'list' object has no attribute 'operations'" in str(exc_info.value)
 
     def test_callback_signature_mismatch(self, tk_root):
         """
         FAILING TEST: コールバック関数のシグネチャ不一致でエラーになることを確認
-        
+
         修正前: TypeError during callback execution due to signature mismatch
         """
         from src.ui.visual_editor import VisualEditor
@@ -112,30 +116,33 @@ class TestSmokeTestRegressionErrors:
             editor._on_blocks_reordered(0, 0)
 
         # Should fail due to wrong number of arguments
-        assert "missing 1 required positional argument" in str(exc_info.value)
+        assert 'missing 1 required positional argument' in str(exc_info.value)
 
     def test_geometry_manager_conflict_error(self, tk_root):
         """
         FAILING TEST: 既存のgridを使用しているrootウィンドウでVisualEditorを開くとエラーになることを確認
-        
+
         修正前: TclError: cannot use geometry manager pack inside . which already has slaves managed by grid
         """
         from src.ui.visual_editor import VisualEditor
-        import tkinter as tk
         from tkinter import ttk
+        import tkinter as tk
 
         # Simulate the smoke test scenario: create widgets using grid in the root
         test_frame = ttk.Frame(tk_root, padding='10')
         test_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
+
         test_label = ttk.Label(test_frame, text='Test Label')
         test_label.grid(row=0, column=0)
 
         # This should fail because root already has grid-managed children
         with pytest.raises(tk.TclError) as exc_info:
             VisualEditor(tk_root)  # Passing root with existing grid children
-        
-        assert "cannot use geometry manager pack inside . which already has slaves managed by grid" in str(exc_info.value)
+
+        assert (
+            'cannot use geometry manager pack inside . which already has slaves managed by grid'
+            in str(exc_info.value)
+        )
 
 
 class TestSmokeTestCorrectImplementation:
@@ -175,11 +182,11 @@ class TestSmokeTestCorrectImplementation:
 
         # Should work without callback parameter
         editor = VisualEditor(tk_root)
-        
+
         # Should be able to set callback after initialization
         callback_mock = Mock()
         editor.on_macro_changed = callback_mock
-        
+
         assert editor.on_macro_changed == callback_mock
         assert editor.root is not None
 
@@ -190,7 +197,7 @@ class TestSmokeTestCorrectImplementation:
         from src.ui.visual_editor import VisualEditor
 
         editor = VisualEditor(tk_root)
-        
+
         # Create proper MacroRecording object
         test_macro = MacroRecording(
             name='Test Macro',
@@ -201,7 +208,7 @@ class TestSmokeTestCorrectImplementation:
 
         # This should work without errors
         editor.load_macro(test_macro)
-        
+
         assert editor.macro_recording == test_macro
         assert len(editor.canvas.blocks) == 1
 
@@ -241,19 +248,19 @@ class TestSmokeTestCorrectImplementation:
         SUCCESS TEST: 新しいTopLevelウィンドウを使用することで競合を避けられることを確認
         """
         from src.ui.visual_editor import VisualEditor
-        import tkinter as tk
         from tkinter import ttk
+        import tkinter as tk
 
         # Simulate the smoke test scenario: create widgets using grid in the root
         test_frame = ttk.Frame(tk_root, padding='10')
         test_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
+
         test_label = ttk.Label(test_frame, text='Test Label')
         test_label.grid(row=0, column=0)
 
         # This should work by creating a new Toplevel window instead of using root
         editor = VisualEditor(None)  # Pass None to create new Toplevel
-        
+
         # Should create its own window successfully
         assert editor.root is not None
         assert editor.root != tk_root  # Should be a different window
@@ -267,12 +274,13 @@ class TestSmokeTestCorrectImplementation:
 
         # Step 1: Correct VisualEditor initialization
         editor = VisualEditor(tk_root)
-        
+
         # Step 2: Set callback with correct signature
         callback_results = []
+
         def correct_callback(macro):
             callback_results.append(macro)
-        
+
         editor.on_macro_changed = correct_callback
 
         # Step 3: Create proper MacroRecording from operations list
@@ -290,7 +298,10 @@ class TestSmokeTestCorrectImplementation:
         # Verify everything is set up correctly
         assert editor.macro_recording == test_macro
         assert len(editor.canvas.blocks) == 1
-        assert editor.canvas.blocks[0]['operation'].operation_type == OperationType.SCREEN_CONDITION
+        assert (
+            editor.canvas.blocks[0]['operation'].operation_type
+            == OperationType.SCREEN_CONDITION
+        )
 
         # Step 5: Simulate image editing callback trigger
         editor._on_blocks_reordered(0, 0)
