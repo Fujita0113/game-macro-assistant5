@@ -345,3 +345,213 @@ class TestCallbackIntegrationAndMockTests:
             assert (
                 '破損' in error_msg or 'corrupted' in error_msg or 'エラー' in error_msg
             )
+
+
+class TestTechnicalDebtImprovements:
+    """Test technical debt improvements with configurable parameters and robust error handling."""
+
+    def test_configurable_success_dialog_delay_default(self, tk_root):
+        """Test default success dialog delay (1000ms)."""
+        dialog = LoadDialog(tk_root)
+        mock_recording = MacroRecording('test', 1234567890.0, [], {})
+
+        with patch.object(dialog.file_manager, 'load_macro_file') as mock_load:
+            with patch.object(dialog.dialog, 'after') as mock_after:
+                mock_load.return_value = mock_recording.to_dict()
+
+                dialog.file_path_var.set('C:\\test\\macro.gma.json')
+                dialog.password_var.set('password123')
+                dialog._on_load_clicked()
+
+                # Should use default delay of 1000ms
+                mock_after.assert_called_once_with(1000, dialog.dialog.destroy)
+
+    def test_configurable_success_dialog_delay_custom(self, tk_root):
+        """Test custom success dialog delay."""
+        custom_delay = 2500
+        dialog = LoadDialog(tk_root, success_delay_ms=custom_delay)
+        mock_recording = MacroRecording('test', 1234567890.0, [], {})
+
+        with patch.object(dialog.file_manager, 'load_macro_file') as mock_load:
+            with patch.object(dialog.dialog, 'after') as mock_after:
+                mock_load.return_value = mock_recording.to_dict()
+
+                dialog.file_path_var.set('C:\\test\\macro.gma.json')
+                dialog.password_var.set('password123')
+                dialog._on_load_clicked()
+
+                # Should use custom delay
+                mock_after.assert_called_once_with(custom_delay, dialog.dialog.destroy)
+
+    def test_error_classification_by_exception_attributes(self, tk_root):
+        """Test error classification based on exception attributes rather than string matching."""
+        dialog = LoadDialog(tk_root)
+
+        # Create a PasswordValidationError with specific error code
+        password_error = PasswordValidationError('Test error message')
+        password_error.error_code = 'INVALID_PASSWORD'
+
+        with patch.object(dialog.file_manager, 'load_macro_file') as mock_load:
+            mock_load.side_effect = password_error
+
+            dialog.file_path_var.set('C:\\test\\macro.gma.json')
+            dialog.password_var.set('wrongpassword')
+            dialog._on_load_clicked()
+
+            # Should classify error by error_code, not message content
+            error_msg = dialog.message_var.get()
+            assert 'パスワードが正しくありません' in error_msg
+
+        # Test different error codes
+        attempts_error = PasswordValidationError('Different message')
+        attempts_error.error_code = 'MAX_ATTEMPTS_EXCEEDED'
+
+        with patch.object(dialog.file_manager, 'load_macro_file') as mock_load:
+            mock_load.side_effect = attempts_error
+
+            dialog._on_load_clicked()
+
+            error_msg = dialog.message_var.get()
+            assert 'パスワード試行回数が上限に達しました' in error_msg
+
+    def test_unknown_error_fallback_handling(self, tk_root):
+        """Test fallback handling for unknown or unclassified errors."""
+        dialog = LoadDialog(tk_root)
+
+        # Create error with unknown error code
+        unknown_error = PasswordValidationError('Unknown error occurred')
+        unknown_error.error_code = 'UNKNOWN_ERROR'
+
+        with patch.object(dialog.file_manager, 'load_macro_file') as mock_load:
+            mock_load.side_effect = unknown_error
+
+            dialog.file_path_var.set('C:\\test\\macro.gma.json')
+            dialog.password_var.set('password123')
+            dialog._on_load_clicked()
+
+            # Should fall back to generic error message
+            error_msg = dialog.message_var.get()
+            assert 'エラー' in error_msg or 'Unknown error occurred' in error_msg
+
+    def test_loading_progress_indication(self, tk_root):
+        """Test that loading progress is indicated during file operations."""
+        dialog = LoadDialog(tk_root)
+        mock_recording = MacroRecording('test', 1234567890.0, [], {})
+
+        # Track progress indication calls
+        progress_calls = []
+
+        def mock_show_progress():
+            progress_calls.append('show')
+
+        def mock_hide_progress():
+            progress_calls.append('hide')
+
+        with patch.object(dialog.file_manager, 'load_macro_file') as mock_load:
+            with patch.object(
+                dialog, '_show_loading_progress', side_effect=mock_show_progress
+            ):
+                with patch.object(
+                    dialog, '_hide_loading_progress', side_effect=mock_hide_progress
+                ):
+                    mock_load.return_value = mock_recording.to_dict()
+
+                    dialog.file_path_var.set('C:\\test\\macro.gma.json')
+                    dialog.password_var.set('password123')
+                    dialog._on_load_clicked()
+
+                    # Should have called show and hide progress
+                    assert 'show' in progress_calls
+                    assert 'hide' in progress_calls
+
+    def test_ui_remains_responsive_during_load(self, tk_root):
+        """Test that UI remains responsive during loading operations."""
+        dialog = LoadDialog(tk_root)
+
+        # Mock load button to verify it gets disabled/enabled
+        load_button_states = []
+
+        def track_load_button_state():
+            load_button_states.append(dialog.load_button.cget('state'))
+
+        with patch.object(dialog.file_manager, 'load_macro_file') as mock_load:
+            # Simulate slow file loading
+            def slow_load(*args, **kwargs):
+                track_load_button_state()  # Should be disabled during load
+                return MacroRecording('test', 1234567890.0, [], {}).to_dict()
+
+            mock_load.side_effect = slow_load
+
+            dialog.file_path_var.set('C:\\test\\macro.gma.json')
+            dialog.password_var.set('password123')
+
+            # Button should be enabled initially
+            initial_state = str(dialog.load_button.cget('state'))
+            assert initial_state in ('normal', 'enabled', '')
+
+            dialog._on_load_clicked()
+
+            # Button should have been disabled during load
+            assert 'disabled' in load_button_states or any(
+                'disable' in str(s) for s in load_button_states
+            )
+
+    def test_result_none_validation(self, tk_root):
+        """Test result attribute None validation and type safety."""
+        dialog = LoadDialog(tk_root)
+
+        # Initially result should be None
+        assert dialog.result is None
+
+        # show_modal should return None when result is None
+        with patch.object(dialog.dialog, 'wait_window'):
+            result = dialog.show_modal()
+            assert result is None
+
+        # Ensure type safety - result should always be None or MacroRecording
+        assert dialog.result is None or isinstance(dialog.result, MacroRecording)
+
+    def test_show_modal_type_safety(self, tk_root):
+        """Test show_modal return value type safety."""
+        dialog = LoadDialog(tk_root)
+
+        # Test with successful result
+        mock_recording = MacroRecording('test', 1234567890.0, [], {})
+        dialog.result = mock_recording
+
+        with patch.object(dialog.dialog, 'wait_window'):
+            result = dialog.show_modal()
+
+            # Result should be MacroRecording instance
+            assert isinstance(result, MacroRecording)
+            assert result.name == 'test'
+            assert result.created_at == 1234567890.0
+
+        # Test with None result (cancelled or error)
+        dialog.result = None
+
+        with patch.object(dialog.dialog, 'wait_window'):
+            result = dialog.show_modal()
+
+            # Result should be None
+            assert result is None
+
+    def test_set_result_type_validation(self, tk_root):
+        """Test _set_result method type validation."""
+        dialog = LoadDialog(tk_root)
+
+        # Valid MacroRecording should work
+        valid_recording = MacroRecording('test', 1234567890.0, [], {})
+        dialog._set_result(valid_recording)
+        assert dialog.result == valid_recording
+
+        # None should work
+        dialog._set_result(None)
+        assert dialog.result is None
+
+        # Invalid type should raise AssertionError
+        try:
+            dialog._set_result('invalid string type')
+            assert False, 'Should have raised AssertionError for invalid type'
+        except AssertionError as e:
+            assert 'Result must be None or MacroRecording' in str(e)

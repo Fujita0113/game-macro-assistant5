@@ -15,16 +15,18 @@ from src.core.file_encryption import MacroFileManager, PasswordValidationError
 class LoadDialog:
     """Modal dialog for loading encrypted macro files."""
 
-    def __init__(self, parent: tk.Tk):
+    def __init__(self, parent: tk.Tk, success_delay_ms: int = 1000):
         """
         Initialize the load dialog.
 
         Args:
             parent: Parent window for modal behavior
+            success_delay_ms: Delay in milliseconds before auto-closing on success (default: 1000)
         """
         self.parent = parent
         self.result: Optional[MacroRecording] = None
         self.file_manager = MacroFileManager()
+        self.success_delay_ms = success_delay_ms
 
         # Create modal dialog
         self.dialog = tk.Toplevel(parent)
@@ -47,6 +49,7 @@ class LoadDialog:
         self.browse_button = None
         self.message_label = None
         self.password_entry = None
+        self.progress_label = None
 
         self._setup_ui()
         self._center_dialog()
@@ -99,13 +102,17 @@ class LoadDialog:
         self.message_label = ttk.Label(
             main_frame, textvariable=self.message_var, foreground='red'
         )
-        self.message_label.grid(
-            row=4, column=0, columnspan=2, sticky='ew', pady=(0, 15)
+        self.message_label.grid(row=4, column=0, columnspan=2, sticky='ew', pady=(0, 5))
+
+        # Progress label (hidden by default)
+        self.progress_label = ttk.Label(main_frame, text='', foreground='blue')
+        self.progress_label.grid(
+            row=5, column=0, columnspan=2, sticky='ew', pady=(0, 10)
         )
 
         # Button frame
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=5, column=0, columnspan=2, sticky='ew')
+        button_frame.grid(row=6, column=0, columnspan=2, sticky='ew')
         button_frame.columnconfigure(0, weight=1)
         button_frame.columnconfigure(1, weight=1)
 
@@ -170,38 +177,85 @@ class LoadDialog:
             # Clear previous messages
             self.message_var.set('')
 
+            # Show loading progress and disable UI
+            self._show_loading_progress()
+
             # Load and decrypt the file using MacroFileManager
             decrypted_data = self.file_manager.load_macro_file(file_path, password)
 
             # Convert dictionary to MacroRecording object
-            self.result = MacroRecording.from_dict(decrypted_data)
+            macro_recording = MacroRecording.from_dict(decrypted_data)
+            self._set_result(macro_recording)
 
             # Show success message
             self.message_var.set('読み込み完了しました')
 
             # Close dialog automatically after success
-            self.dialog.after(1000, self.dialog.destroy)  # Close after 1 second
+            self.dialog.after(self.success_delay_ms, self.dialog.destroy)
 
         except PasswordValidationError as e:
-            # Handle password and file system errors
-            error_msg = str(e)
-            if 'Invalid password' in error_msg:
-                self.message_var.set('パスワードが正しくありません')
-            elif 'Maximum password attempts exceeded' in error_msg:
-                self.message_var.set('パスワード試行回数が上限に達しました')
-            elif 'File appears to be corrupted' in error_msg:
-                self.message_var.set('ファイルが破損しています')
-            elif 'Failed to load file' in error_msg:
-                self.message_var.set('ファイルの読み込みに失敗しました')
-            else:
-                self.message_var.set(f'エラー: {error_msg}')
+            # Use robust error classification instead of string matching
+            error_message = self._classify_password_error(e)
+            self.message_var.set(error_message)
         except Exception as e:
             # Handle other unexpected errors
             self.message_var.set(f'予期しないエラーが発生しました: {str(e)}')
+        finally:
+            # Always hide loading progress and restore UI
+            self._hide_loading_progress()
+
+    def _classify_password_error(self, exception: PasswordValidationError) -> str:
+        """
+        Classify PasswordValidationError based on exception attributes rather than string matching.
+
+        Args:
+            exception: The PasswordValidationError to classify
+
+        Returns:
+            Appropriate user-friendly error message
+        """
+        # Check if exception has error_code attribute for robust classification
+        if hasattr(exception, 'error_code'):
+            error_code = exception.error_code
+            if error_code == 'INVALID_PASSWORD':
+                return 'パスワードが正しくありません'
+            elif error_code == 'MAX_ATTEMPTS_EXCEEDED':
+                return 'パスワード試行回数が上限に達しました'
+            elif error_code == 'FILE_CORRUPTED':
+                return 'ファイルが破損しています'
+            elif error_code == 'FILE_LOAD_FAILED':
+                return 'ファイルの読み込みに失敗しました'
+
+        # Fallback to string matching for backward compatibility
+        error_msg = str(exception)
+        if 'Invalid password' in error_msg:
+            return 'パスワードが正しくありません'
+        elif 'Maximum password attempts exceeded' in error_msg:
+            return 'パスワード試行回数が上限に達しました'
+        elif 'File appears to be corrupted' in error_msg:
+            return 'ファイルが破損しています'
+        elif 'Failed to load file' in error_msg:
+            return 'ファイルの読み込みに失敗しました'
+        else:
+            # Generic fallback for unknown errors
+            return f'エラー: {error_msg}'
+
+    def _show_loading_progress(self):
+        """Show loading progress and disable user interaction."""
+        self.progress_label.config(text='読み込み中...')
+        self.load_button.config(state='disabled')
+        self.browse_button.config(state='disabled')
+        self.dialog.update_idletasks()  # Force UI update
+
+    def _hide_loading_progress(self):
+        """Hide loading progress and re-enable user interaction."""
+        self.progress_label.config(text='')
+        self.load_button.config(state='normal')
+        self.browse_button.config(state='normal')
 
     def _on_cancel_clicked(self):
         """Handle cancel button click."""
-        self.result = None
+        self._set_result(None)
         self.dialog.destroy()
 
     def show_modal(self) -> Optional[MacroRecording]:
@@ -213,4 +267,23 @@ class LoadDialog:
         """
         # Wait for dialog to be closed
         self.dialog.wait_window()
+
+        # Ensure type safety - result must be None or MacroRecording
+        assert self.result is None or isinstance(self.result, MacroRecording), (
+            f'Result must be None or MacroRecording, got {type(self.result)}'
+        )
+
         return self.result
+
+    def _set_result(self, result: Optional[MacroRecording]) -> None:
+        """
+        Set the dialog result with type validation.
+
+        Args:
+            result: MacroRecording object or None
+        """
+        assert result is None or isinstance(result, MacroRecording), (
+            f'Result must be None or MacroRecording, got {type(result)}'
+        )
+
+        self.result = result
