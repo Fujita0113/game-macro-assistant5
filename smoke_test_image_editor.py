@@ -178,14 +178,15 @@ class SmokeTestApp:
             try:
                 self.visual_editor = VisualEditor(None)  # Create new Toplevel window
                 self.visual_editor.on_macro_changed = self.on_visual_editor_change
-                
+
                 # Convert operations list to MacroRecording
                 from core.macro_data import MacroRecording
+
                 test_macro = MacroRecording(
                     name='Smoke Test Macro',
                     created_at=time.time(),
                     operations=test_operations,
-                    metadata={'source': 'smoke_test'}
+                    metadata={'source': 'smoke_test'},
                 )
                 self.visual_editor.load_macro(test_macro)
                 self.log_result('OK ビジュアルエディタが開きました')

@@ -1,7 +1,7 @@
 {
-  "test_timestamp": "2025-08-28T21:47:06.290337",
+  "test_timestamp": "2025-08-29T12:22:30.034049",
   "test_source": "file_based",
-  "source_file": "C:\\Users\\yufuj\\Desktop\\gameAutoProject5\\worktrees\\feat-image-editor-v2\\tests\\fixtures\\integration_test_data.json",
+  "source_file": "C:\\Users\\yufuj\\Desktop\\gameAutoProject5\\worktrees\\feat-load-dialog-ui\\tests\\fixtures\\integration_test_data.json",
   "total_events": 15,
   "mouse_clicks": 3,
   "keyboard_events": 12,
