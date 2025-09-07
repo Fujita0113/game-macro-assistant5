@@ -34,6 +34,13 @@ class TestDependencyIntegration(unittest.TestCase):
                 except ImportError as e:
                     self.fail(f"Failed to import required dependency '{dep}': {e}")
 
+    def test_mss_importable(self):
+        """`mss` がインポート可能であることを確認"""
+        try:
+            import mss  # noqa: F401
+        except ImportError as e:
+            self.fail(f"Failed to import required dependency 'mss': {e}")
+
     def test_pynput_specific_version(self):
         """Test that pynput is the expected version"""
 
