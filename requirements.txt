@@ -2,6 +2,7 @@
 pynput>=1.7.6          # For global input capture (minimum version for stability)
 pillow>=10.0.0         # For screenshot and image processing
 cryptography>=41.0.0   # For macro file encryption
+mss>=9                 # For fast, lightweight screen capture (Linux/CI fallback)
 pywin32>=306; platform_system == "Windows"  # Windows専用依存（GDIなどWinAPI用）
 # tkinter は各OSのPython配布に含まれるが、Linuxでは python3-tk パッケージが必要
 
