@@ -2,6 +2,7 @@ import threading
 import logging
 import json
 from datetime import datetime
+import os
 from typing import List, Optional
 from pynput import mouse, keyboard
 
@@ -22,6 +23,9 @@ logging.basicConfig(
     level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Wayland 警告を一度だけ出すためのモジュールスコープフラグ
+_WAYLAND_WARNING_EMITTED = False
 
 
 class InputCaptureManager:
@@ -46,6 +50,9 @@ class InputCaptureManager:
                 self._stop_status_display.clear()
 
                 logger.info('Starting input capture recording session')
+
+                # Linux/Wayland 環境の制約を検出して一度だけ警告を出す
+                self._warn_if_wayland_once()
 
                 # Start mouse listener
                 self._mouse_listener = mouse.Listener(on_click=self._on_mouse_click)
@@ -106,6 +113,40 @@ class InputCaptureManager:
 
             print('Recording stopped')
 
+    def _warn_if_wayland_once(self) -> None:
+        """Wayland 環境を検出した場合に一度だけ警告する。
+
+        - WAYLAND_DISPLAY が設定 もしくは XDG_SESSION_TYPE=wayland の場合に検出
+        - X11 (DISPLAY が設定) の場合は警告しない
+        - 両方未設定（ヘッドレス/xvfb等）の場合も警告しない
+        """
+        global _WAYLAND_WARNING_EMITTED
+        if _WAYLAND_WARNING_EMITTED:
+            return
+
+        try:
+            has_x11 = bool(os.environ.get('DISPLAY'))
+            is_wayland_env = bool(os.environ.get('WAYLAND_DISPLAY')) or (
+                os.environ.get('XDG_SESSION_TYPE', '').lower() == 'wayland'
+            )
+
+            # DISPLAY が存在する場合はX11優先とみなし、警告は出さない
+            if (not has_x11) and is_wayland_env and not _WAYLAND_WARNING_EMITTED:
+                # Err-CAP-004: リソース/環境制約の一種としてWayland制約を扱う
+                logger.warning(
+                    (
+                        f'{ErrorCodes.CAPTURE_RESOURCE_UNAVAILABLE}: Wayland 環境では '
+                        'グローバル入力フックが制約される可能性があります。'
+                        "X11 へ切り替えるか、ヘッドレス実行では 'xvfb-run' の利用を検討してください。"
+                        "例: xvfb-run -s '-screen 0 1920x1080x24' python src/main.py"
+                    )
+                )
+                _WAYLAND_WARNING_EMITTED = True
+            # X11 あるいはヘッドレスは警告不要
+        except Exception:
+            # 検出失敗時は何もしない（安全側）
+            pass
+
     def get_recorded_events(self) -> List[InputEvent]:
         """Get the list of recorded events"""
         with self._recording_lock:
@@ -118,6 +159,10 @@ class InputCaptureManager:
 
     def _display_recording_status(self) -> None:
         """Display 'Recording...' message every second while recording"""
+        # 開始直後に一度表示してから、以降は1秒ごとに表示する
+        if self._recording and not self._stop_status_display.is_set():
+            print('Recording...')
+
         while not self._stop_status_display.wait(1.0):
             if self._recording:
                 print('Recording...')
