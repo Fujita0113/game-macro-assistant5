@@ -15,6 +15,7 @@ PC ゲーム向けのデスクトップ自動化ツールです。マウス／�
 
 - 最終デプロイ: Windows 10/11
 - 開発・検証: Linux（CI で ruff/pytest を実行、GUI は Xvfb でヘッドレス実行）
+- 注意: Linux の Wayland 環境では一部機能（Pillow の `ImageGrab` やグローバル入力フック）が制約を受けるため、X11 セッションまたは `xvfb-run` による回避を推奨
 
 ## セットアップ
 
@@ -64,6 +65,10 @@ python -m pytest -q
 
 # GUI 環境がない場合（CI やヘッドレス環境）
 xvfb-run -a python -m pytest -q
+
+# Wayland を使用している場合の推奨（X11 代替が難しいとき）
+# → ヘッドレスであっても Xvfb により X11 相当の環境を提供できます
+# → 開発端末でもテストは上記 xvfb-run で実行可能です
 ```
 
 補足:
@@ -139,8 +144,9 @@ sudo apt-get update && \
 
 注意点:
 - Tkinter は Linux では `python3-tk` パッケージが必要です。
-- 画面キャプチャやGUIテストをヘッドレスで実行する場合は `xvfb` を利用してください。
-- Windows専用依存の `pywin32` は Linux ではインストールされません（環境マーカーで制御済み）。
+- 画面キャプチャや GUI テストをヘッドレスで実行する場合は `xvfb` を利用してください（CI でも採用）。
+- Wayland セッションでは `ImageGrab`（Pillow）やグローバル入力フックの制約によりキャプチャ／テストが失敗することがあります。X11 セッションでの実行、または `xvfb-run` による回避を推奨します。
+- Windows 専用依存の `pywin32` は Linux ではインストールされません（環境マーカーで制御済み）。
 
 ### 仮想環境と依存関係
 
@@ -157,7 +163,7 @@ pip install -r requirements.txt
 # すべてのテスト（ディスプレイがない場合、GUIテストは自動スキップ）
 python -m pytest -q
 
-# ヘッドレスでGUIテストも通したい場合
+# ヘッドレスで GUI テストも通したい場合（Wayland 回避含む）
 xvfb-run -a python -m pytest -q
 
 # Lint / Format チェック
@@ -170,7 +176,29 @@ ruff format . --check
 - 非対話テスト: `python src/main.py --test-input-file input_capture_test_results.json`
 - 対話テスト（要ディスプレイ）: `python src/main.py --test-input`（ESC で停止）
 
-Wayland 環境では `ImageGrab` やグローバルフック（pynput）が制約を受ける場合があります。必要に応じて X11 セッションや `xvfb-run` を利用してください。
+### Wayland の制約と回避策
+
+- Wayland 環境では以下の制約が発生する可能性があります。
+  - Pillow の `ImageGrab` によるスクリーンキャプチャ失敗
+  - グローバル入力フック（`pynput`）の権限・イベント取得の制約
+- 推奨回避策:
+  - 可能なら X11 セッションで実行
+  - もしくは `xvfb-run -a` を用いてヘッドレスの X サーバ（Xvfb）上でテストを実行
+
+例（テスト実行）:
+
+```
+xvfb-run -a python -m pytest -q
+```
+
+### Linux の画面キャプチャと mss フォールバック（背景）
+
+- 本プロジェクトでは、Linux での安定した画面キャプチャのために `mss` をフォールバック候補として採用予定です（Issue #23, #24）。
+- 目的: Wayland や権限制約により `ImageGrab` が失敗する環境でもキャプチャの成功率を高める。
+- 現状: 既定では Pillow の `ImageGrab` を使用中。今後の実装で、失敗時に `mss` へ自動フォールバックする計画です。
+- 最小手順（将来のフォールバック有効化に備える場合）:
+  - `pip install mss`
+  - 以降のリリースで実装が有効化されると、自動的に `mss` が利用される想定です（追加設定なし）。
 
 ## デプロイ（Windows）
 
