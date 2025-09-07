@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import Mock, patch
+import os
 import time
 import sys
-import os
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -14,6 +14,14 @@ from src.core.events import MouseEvent, KeyboardEvent, EventType, MouseButton
 class TestInputCaptureManager(unittest.TestCase):
     def setUp(self):
         self.manager = InputCaptureManager()
+        # Wayland 警告の一回限りフラグをテスト毎にリセット（あれば）
+        try:
+            import src.core.input_capture as ic
+
+            if hasattr(ic, '_WAYLAND_WARNING_EMITTED'):
+                ic._WAYLAND_WARNING_EMITTED = False
+        except Exception:
+            pass
 
     def tearDown(self):
         if self.manager.is_recording():
@@ -23,6 +31,89 @@ class TestInputCaptureManager(unittest.TestCase):
         """Test initial state of InputCaptureManager"""
         self.assertFalse(self.manager.is_recording())
         self.assertEqual(len(self.manager.get_recorded_events()), 0)
+
+    @patch('src.core.input_capture.mouse.Listener')
+    @patch('src.core.input_capture.keyboard.Listener')
+    def test_wayland_env_emits_warning_once(
+        self, mock_keyboard_listener, mock_mouse_listener
+    ):
+        """Wayland環境では起動時に警告ログ (Err-CAP-004) が1回出る"""
+        mock_mouse_instance = Mock()
+        mock_keyboard_instance = Mock()
+        mock_mouse_listener.return_value = mock_mouse_instance
+        mock_keyboard_listener.return_value = mock_keyboard_instance
+
+        with patch.dict(
+            os.environ,
+            {
+                'WAYLAND_DISPLAY': 'wayland-0',
+                'DISPLAY': '',
+                'XDG_SESSION_TYPE': 'wayland',
+            },
+            clear=False,
+        ):
+            with self.assertLogs('src.core.input_capture', level='WARNING') as cm:
+                self.manager.start_recording()
+                # すぐ停止してクリーンアップ
+                self.manager.stop_recording()
+
+        warnings = [r for r in cm.records if r.levelname == 'WARNING']
+        self.assertEqual(len(warnings), 1, 'Wayland 警告はちょうど1回であるべき')
+        msg = warnings[0].getMessage()
+        self.assertIn('Err-CAP-004', msg)
+        # 回避策のヒントが含まれる
+        self.assertTrue('xvfb-run' in msg or 'X11' in msg)
+
+    @patch('src.core.input_capture.mouse.Listener')
+    @patch('src.core.input_capture.keyboard.Listener')
+    def test_x11_env_does_not_warn(self, mock_keyboard_listener, mock_mouse_listener):
+        """X11 環境では警告は出ない"""
+        mock_mouse_instance = Mock()
+        mock_keyboard_instance = Mock()
+        mock_mouse_listener.return_value = mock_mouse_instance
+        mock_keyboard_listener.return_value = mock_keyboard_instance
+
+        with patch.dict(
+            os.environ,
+            {'DISPLAY': ':0', 'WAYLAND_DISPLAY': '', 'XDG_SESSION_TYPE': 'x11'},
+            clear=False,
+        ):
+            with self.assertLogs('src.core.input_capture', level='INFO') as cm:
+                self.manager.start_recording()
+                self.manager.stop_recording()
+
+        warnings = [r for r in cm.records if r.levelname == 'WARNING']
+        self.assertEqual(len(warnings), 0)
+
+    @patch('src.core.input_capture.mouse.Listener')
+    @patch('src.core.input_capture.keyboard.Listener')
+    def test_headless_env_does_not_warn(
+        self, mock_keyboard_listener, mock_mouse_listener
+    ):
+        """DISPLAY も WAYLAND_DISPLAY もない場合でも警告は出ない（ヘッドレス）"""
+        mock_mouse_instance = Mock()
+        mock_keyboard_instance = Mock()
+        mock_mouse_listener.return_value = mock_mouse_instance
+        mock_keyboard_listener.return_value = mock_keyboard_instance
+
+        # 既存の値を一時的に除去
+        remove_keys = {}
+        for k in ('DISPLAY', 'WAYLAND_DISPLAY', 'XDG_SESSION_TYPE'):
+            if k in os.environ:
+                remove_keys[k] = os.environ[k]
+        try:
+            for k in list(remove_keys.keys()):
+                os.environ.pop(k, None)
+
+            with self.assertLogs('src.core.input_capture', level='INFO') as cm:
+                self.manager.start_recording()
+                self.manager.stop_recording()
+
+            warnings = [r for r in cm.records if r.levelname == 'WARNING']
+            self.assertEqual(len(warnings), 0)
+        finally:
+            # 元の値を復元
+            os.environ.update(remove_keys)
 
     @patch('src.core.input_capture.mouse.Listener')
     @patch('src.core.input_capture.keyboard.Listener')
