@@ -199,6 +199,77 @@ logging.getLogger('src.core.input_capture').setLevel(logging.DEBUG)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 開発環境（Linux）
+
+本プロジェクトは最終的に Windows を主要プラットフォームとしますが、開発は Linux 上でも可能です。以下の手順で Linux 開発環境を構築してください。
+
+### 必須パッケージ（Debian/Ubuntu 例）
+
+```
+sudo apt-get update && \
+  sudo apt-get install -y \
+  python3-venv python3-pip python3-tk \
+  build-essential libjpeg-dev zlib1g-dev libpng-dev \
+  xvfb
+```
+
+注意点:
+- Tkinter は Linux では `python3-tk` パッケージが必要です。
+- 画面キャプチャやGUIテストをヘッドレスで実行する場合は `xvfb` を利用してください。
+- Windows専用依存の `pywin32` は Linux ではインストールされません（環境マーカーで制御済み）。
+
+### 仮想環境と依存関係
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+```
+
+### テストとコード品質（Definition of Done 準拠）
+
+```
+# すべてのテスト（ディスプレイがない場合、GUIテストは自動スキップ）
+python -m pytest -q
+
+# ヘッドレスでGUIテストも通したい場合
+xvfb-run -a python -m pytest -q
+
+# Lint / Format チェック
+ruff check .
+ruff format . --check
+```
+
+### 動作確認
+
+- 非対話テスト: `python src/main.py --test-input-file input_capture_test_results.json`
+- 対話テスト（要ディスプレイ）: `python src/main.py --test-input`（ESC で停止）
+
+Wayland 環境では `ImageGrab` やグローバルフック（pynput）が制約を受ける場合があります。必要に応じて X11 セッションや `xvfb-run` を利用してください。
+
+## デプロイ（Windows）
+
+最終配布は Windows 向けの実行ファイルを想定します。ビルドは Windows 上で行ってください（クロスビルドは非推奨）。
+
+### 手順（例: PyInstaller）
+
+```
+pip install pyinstaller
+pyinstaller -F -w src/main.py --name GameMacroAssistant
+```
+
+- 生成物は `dist/GameMacroAssistant.exe`
+- グローバル入力フックには管理者権限が必要な場合があります
+- `pywin32` は Windows 上で自動的にインストールされます
+
+## CI 推奨構成
+
+- Linux ジョブ: `ruff` のチェック、`pytest`（必要に応じて `xvfb-run`）
+- Windows ジョブ: `pytest` 実行と PyInstaller によるビルド、成果物の保存
+
+GitHub Actions のサンプルは `.github/workflows/ci.yml` を参照してください。
+
 ### Development Setup
 
 ```bash
