@@ -68,6 +68,47 @@ GameMacroAssistant は PC ゲーム向けのデスクトップ自動化ツール
 
 ---
 
+## 仮想環境（.venv）運用ポリシー
+
+以後の開発・テスト・Lint は、原則としてリポジトリ直下の仮想環境（`.venv`）内で実行する。
+
+- 必須: グローバル環境への `pip` インストールは禁止（`--user` や `--break-system-packages` は使用しない）
+- 原則: コマンドは毎回 `.venv` のバイナリをフルパスで呼び出す（Codex CLI はセッションをまたぐ `source` が永続しないため）
+- 例外: CI（GitHub Actions）はジョブが隔離されているため、システム環境に直接インストールしてよい（既存の `.github/workflows/ci.yml` 構成に準拠）
+
+### セットアップ手順（Linux）
+
+```bash
+# 事前に必要になる場合（Debian/Ubuntu 系）
+sudo apt-get update
+sudo apt-get install -y python3-venv python3-pip python3-tk xvfb
+
+# 仮想環境の作成と依存インストール
+python3 -m venv .venv
+./.venv/bin/python -m pip install -U pip
+./.venv/bin/pip install -r requirements.txt
+```
+
+### 実行例（常に .venv を利用）
+
+```bash
+# Ruff（Lint/Format チェック）
+./.venv/bin/ruff check .
+./.venv/bin/ruff format . --check
+
+# テスト（GUI 環境あり）
+./.venv/bin/python -m pytest -q
+
+# テスト（ヘッドレス/Wayland 回避、Xvfb 経由）
+xvfb-run -a ./.venv/bin/python -m pytest -q
+```
+
+注意:
+- Codex CLI は `source .venv/bin/activate` の効果が継続しないため、各コマンドで `./.venv/bin/...` を明示すること。
+- Wayland 環境では `ImageGrab` やグローバル入力フックが制約を受ける可能性があるため、必要に応じて `xvfb-run` を使用すること（README のガイダンスに準拠）。
+
+---
+
 ## Issue 完了ワークフロー
 
 ユーザーが「実装完了」と報告した際の標準手順：
