@@ -1,168 +1,122 @@
-# CLAUDE.md
+このファイルは、Codex cli（codex） がこのリポジトリ内のコードを扱う際のガイドラインを示します。
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+---
 
-## Project Overview
+## プロジェクト概要
 
-GameMacroAssistant is a desktop automation tool for PC games that allows users to record, edit, and replay mouse/keyboard operations. The tool uses visual recognition to match screen conditions before executing actions.
+GameMacroAssistant は PC ゲーム向けのデスクトップ自動化ツールであり、マウスやキーボードの操作を記録・編集・再生できます。
+本ツールは画面認識を利用して、アクションを実行する前に画面状態を一致させます。
 
-## Core Architecture
+---
 
-Based on the requirements document, this application should implement:
+## コアアーキテクチャ
 
-### Recording System
-- Global input capture for mouse and keyboard operations
-- Screen capture with native resolution support and GDI fallback
-- ESC key termination for recording sessions
-- Error handling for capture failures (logs `Err-CAP` codes)
+要件定義に基づき、本アプリケーションは以下を実装すべきです：
 
-### Visual Editor
-- Block-based macro representation with drag-and-drop reordering
-- Image editing for condition screenshots (double-click to edit, rectangular selection)
-- Undo/redo support (Ctrl+Z)
+### 記録システム
 
-### Execution Engine  
-- Global hotkey triggering (e.g., Ctrl+Shift+F10)
-- Image matching for conditional execution
-- Timeout handling with notification system (logs `Err-TMO` codes)
-- Progress indication in system tray
+* マウスおよびキーボード操作のグローバル入力キャプチャ
+* ネイティブ解像度対応の画面キャプチャ（失敗時は GDI フォールバック）
+* ESC キーによる記録セッション終了
+* キャプチャ失敗時のエラーハンドリング（`Err-CAP` コードをログ出力）
 
-### File Management
-- Encrypted `.gma.json` file format with password protection (8+ characters)
-- Three-attempt password validation with error feedback
+### ビジュアルエディタ
 
-## Key Technical Requirements
+* ブロックベースのマクロ表現（ドラッグ＆ドロップで並べ替え可能）
+* 条件スクリーンショットの画像編集（ダブルクリックで編集、矩形選択）
+* アンドゥ／リドゥ対応（Ctrl+Z）
 
-- **Screen Capture**: Must handle fullscreen games with fallback to GDI when native capture fails
-- **Visual Recognition**: Image matching between stored conditions and current screen state
-- **Global Hooks**: System-wide input capture and hotkey registration
-- **Encryption**: Secure storage of macro files with password protection
-- **Error Logging**: Comprehensive logging with specific error codes (Err-CAP, Err-TMO)
-- **UI Framework**: Visual editor supporting drag-and-drop, image editing, and block manipulation
+### 実行エンジン
 
-## Development Notes
+* グローバルホットキーによるトリガー（例：Ctrl+Shift+F10）
+* 条件付き実行のための画像マッチング
+* タイムアウト処理と通知システム（`Err-TMO` コードをログ出力）
+* システムトレイでの進捗表示
 
-- The project currently contains only requirements documentation
-- Implementation should focus on defensive automation (game assistance) rather than exploitative automation
-- Error handling and user feedback are critical given the real-time nature of game automation
-- Consider cross-platform compatibility for screen capture methods
+### ファイル管理
 
-### Claude Code Constraints
+* パスワード保護付きの暗号化 `.gma.json` ファイル形式（8文字以上）
+* 最大3回のパスワード検証とエラーフィードバック
 
-- **IMPORTANT**: Claude Code cannot change directories during a session. DO NOT use `cd` commands as they will cause errors
-- All file operations must use absolute paths from the current working directory
-- When working in worktrees, start Claude Code session from within the worktree directory itself
-- Use tools like `Bash` for operations that require specific directory context, but avoid changing the working directory
+---
 
-## Worktree Management
+## 主要な技術要件
 
-When creating worktrees for feature development:
+* **画面キャプチャ**: フルスクリーンゲーム対応、失敗時は GDI フォールバック
+* **画像認識**: 保存条件と現在画面のマッチング
+* **グローバルフック**: システム全体の入力キャプチャとホットキー登録
+* **暗号化**: パスワード保護による安全なマクロファイル保存
+* **エラーログ**: `Err-CAP`, `Err-TMO` などのエラーコード付き包括的ログ
+* **UI フレームワーク**: ドラッグ＆ドロップ、画像編集、ブロック操作に対応するビジュアルエディタ
 
-1. **Create branch first:** Always create a new branch before adding worktree
-   ```bash
-   git checkout -b feat/feature-name
-   git checkout main  # return to main branch
-   ```
+---
 
-2. **Add worktree:** Then add the worktree pointing to the created branch
-   ```bash
-   git worktree add worktrees/feat-feature-name feat/feature-name
-   ```
+## 開発ノート
 
-3. **Work in worktree:** Navigate to the worktree directory for development
-   ```bash
-   cd worktrees/feat-feature-name
-   ```
-   **Note:** Start your Claude Code session from within the worktree directory, as Claude Code cannot change directories during execution.
+* 現在のプロジェクトには要件定義のみが含まれる
+* 実装は「防御的な自動化（ゲーム補助）」に注力し、「不正利用的な自動化」は避ける
+* ゲーム自動化のリアルタイム性から、エラーハンドリングとユーザーフィードバックは極めて重要
+* 画面キャプチャ手法はクロスプラットフォーム互換性を考慮すること
 
-4. **Commit and push changes:** ALWAYS commit and push any implementation changes
-   ```bash
-   git add .
-   git commit -m "Descriptive commit message"
-   git push origin feat/feature-name
-   ```
+---
 
-This approach ensures proper branch tracking and avoids reference errors during worktree creation.
+## Codex cli における制約
 
-## Issue Completion Workflow
+* **重要**: Codex cli はセッション中にディレクトリを変更できない。`cd` コマンドを使用するとエラーになる
+* すべてのファイル操作は現在の作業ディレクトリからの絶対パスを使用すること
+* ディレクトリ依存操作が必要な場合は `Bash` を使う。ただし作業ディレクトリ変更は避けること
 
-When a user reports that implementation is completed, follow this standardized workflow:
+---
 
-1. **Verify and Close Issue:** Check issue status and close with completion comment
+## Issue 完了ワークフロー
+
+ユーザーが「実装完了」と報告した際の標準手順：
+
+1. **Issue の確認とクローズ**
+
    ```bash
    gh issue view {issue_number} --json state,title
-   gh issue close {issue_number} --comment "Implementation completed. All acceptance criteria have been met."
+   gh issue close {issue_number} --comment "実装が完了しました。すべての受け入れ基準を満たしています。"
    ```
 
-2. **Merge Feature Branch:** Merge the completed feature branch to main
+2. **ブランチを main にマージ**
+
    ```bash
    git merge feat/feature-name
    ```
 
-3. **Update Epic Tracking Issue:** Update progress in the parent Epic issue
+3. **Epic Issue の更新**
+
    ```bash
    gh issue edit {epic_issue_number} --body "$(cat <<'EOF'
-   [Updated Epic content with current progress, marking completed items with [x]]
+   [進捗を更新。完了項目には [x] を付与]
    EOF
    )"
    ```
 
-4. **Clean Up Worktree:** Remove worktree and delete merged branch
+4. **最終確認**
+
    ```bash
-   git worktree remove worktrees/feat-feature-name
-   git branch -d feat/feature-name
-   git worktree list  # verify cleanup
+   git log --oneline -3
+   gh issue view {epic_issue_number}
    ```
 
-5. **Verify Final State:** Confirm all cleanup completed successfully
-   ```bash
-   git log --oneline -3  # check merge commit
-   gh issue view {epic_issue_number}  # verify Epic update
-   ```
+---
 
-This workflow ensures consistent project management and maintains clean repository state.
+## 完了の定義（Definition of Done）
 
-## Definition of Done
+タスクが完了と見なされるのは以下条件を満たした場合のみ：
 
-あるタスクが完了したと見なされるのは、以下の条件がすべて満たされた場合のみです。
+* **すべてのテスト成功**（例: `pytest`）
+* **Ruff のリンター・フォーマッターに通過**（例: `ruff check .`, `ruff format . --check`）
 
-- **全てのテストが成功すること** (例: `pytest`)
-- **Ruffのリンターとフォーマッターがエラーなくパスすること** (例: `ruff check .` および `ruff format . --check`)
+これらはすべて終了コード 0 で終了しなければならない。
 
-これらのコマンドは、すべて終了コード0で完了しなければなりません。コマンド実行中の表示（ドットなど）ではなく、最終的な終了コードのみが成功の証拠となります。
+---
 
-## Worktree Synchronization Issues
+## 制約の追記
 
-If an agent reports that previous implementations are not visible in their worktree:
+* **出力はすべて日本語で行うこと**。
+  Codex cli が生成する説明、コードコメント、ログメッセージ、Issue コメント、ドキュメントはすべて日本語で記述すること。
 
-1. **Check worktree status:** The worktree may be based on an outdated commit
-   ```bash
-   # Navigate to worktree directory before starting Claude Code session
-   cd worktrees/feat-feature-name
-   # Then in Claude Code session (which cannot use cd):
-   git log --oneline -5  # Compare with main branch commits
-   ```
 
-2. **Update worktree with latest main:** Merge latest changes from main branch
-   ```bash
-   # Navigate to worktree directory before starting Claude Code session
-   cd worktrees/feat-feature-name
-   # Then in Claude Code session (which cannot use cd):
-   git add . && git commit -m "WIP: Save current work"  # Save any uncommitted changes
-   git merge main  # This may cause merge conflicts
-   ```
-
-3. **Resolve merge conflicts if needed:** Handle conflicts in shared files like requirements.txt or main.py
-   ```bash
-   git status  # See conflicted files
-   # Manually resolve conflicts in each file
-   git add resolved-file.txt
-   git commit -m "Resolve merge conflicts with main branch"
-   ```
-
-4. **Verify integration:** Ensure previous implementations are now visible
-   ```bash
-   git log --oneline -10  # Should show merged commits from other features
-   ```
-
-**Important:** Any worktree that was created before other features were merged will need this synchronization step to access the latest implementations.

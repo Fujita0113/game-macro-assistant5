@@ -1,203 +1,127 @@
 # GameMacroAssistant
 
-A desktop automation tool for PC games that allows users to record, edit, and replay mouse/keyboard operations with visual recognition capabilities.
+PC ゲーム向けのデスクトップ自動化ツールです。マウス／キーボード操作の記録・編集・再生に加え、画面認識により条件一致時のみアクションを実行します。ネイティブ解像度のキャプチャと、失敗時の GDI フォールバック（Windows）を備えます。
 
-## Features
+## 主な機能
 
-- **Global Input Capture**: Records mouse clicks (left, right, middle) and keyboard input system-wide
-- **Space Character Support**: Properly captures space characters in text input
-- **Visual Recognition**: Screen capture with native resolution support and GDI fallback
-- **Error Handling**: Comprehensive error logging with structured error codes
-- **Secure Storage**: Encrypted macro files with password protection
-- **Real-time Execution**: Global hotkey triggering with progress indication
+- グローバル入力キャプチャ（マウス3ボタン／キーボード、ESC で終了）
+- 画面認識（保存条件と現在画面のマッチング）
+- 可視化エディタ（ブロック操作／ドラッグ＆ドロップ／矩形選択／アンドゥ）
+- エラーログ（`Err-CAP`, `Err-TMO` などのコード付き）
+- 暗号化保存（パスワード保護付き `.gma.json`）
+- 実行エンジン（グローバルホットキー、タイムアウト、通知、トレイ進捗）
 
-## Requirements
+## 対応プラットフォーム
 
-- Python 3.8+
-- Windows 10/11 (primary platform)
-- Administrator privileges (for global input capture)
+- 最終デプロイ: Windows 10/11
+- 開発・検証: Linux（CI で ruff/pytest を実行、GUI は Xvfb でヘッドレス実行）
 
-## Installation
+## セットアップ
 
-### 1. Clone the Repository
+### 1. リポジトリ取得
 
 ```bash
 git clone <repository-url>
 cd GameMacroAssistant
 ```
 
-### 2. Create Virtual Environment (Recommended)
+### 2. 仮想環境（推奨）
 
 ```bash
-python -m venv venv
+python -m venv .venv
 # Windows
-venv\Scripts\activate
+.venv\Scripts\activate
 # Linux/Mac
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
-### 3. Install Dependencies
+### 3. 依存関係インストール
+
+requirements.txt は OS に応じて依存を解決します。`pywin32` は Windows 限定です。
 
 ```bash
+pip install -U pip
 pip install -r requirements.txt
 ```
 
-### 4. Verify Installation
+Linux では Tkinter と Xvfb を追加インストールしてください（GUI テストや一部 UI モジュールで必要）。
 
-Run the integration test to ensure everything is working:
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-tk xvfb
+```
+
+## 品質チェック / テスト（DoD）
+
+本プロジェクトの完了の定義（Definition of Done）は以下 2 点の 0 終了です。
+
+```bash
+ruff check .
+ruff format . --check
+
+# GUI ありの通常実行（開発端末）
+python -m pytest -q
+
+# GUI 環境がない場合（CI やヘッドレス環境）
+xvfb-run -a python -m pytest -q
+```
+
+補足:
+- Linux では `pywin32` はインストールされません（`platform_system == "Windows"` マーカー）。
+- テストは GUI 依存があるため、ヘッドレスでは `xvfb-run` の利用を推奨します。
+
+## 実行方法（動作確認）
+
+入力キャプチャの簡易テスト:
 
 ```bash
 python src/main.py --test-input
 ```
 
-## Usage
+画面の指示に従い、3 種類のクリックと文字入力（空白含む）を行い、ESC で終了します。結果は `input_capture_test_results.json` にエクスポートされます。
 
-### Basic Recording Test
+## Windows でのデプロイ（PyInstaller）
 
-To test the input capture functionality:
-
-```bash
-python src/main.py --test-input
-```
-
-Follow the on-screen instructions:
-1. LEFT-click at one location
-2. RIGHT-click at another location  
-3. MIDDLE-click (scroll wheel) at a third location
-4. Type 'Hello World Test' (with spaces)
-5. Press ESC to stop recording
-
-### Running Unit Tests
+CI と同等の手順（ローカルでも可）:
 
 ```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Run specific test file
-python -m pytest tests/test_input_capture.py -v
-
-# Run with coverage
-python -m pytest tests/ --cov=src --cov-report=html
+pip install -r requirements.txt
+pip install pyinstaller
+pyinstaller -F -w src/main.py --name GameMacroAssistant
+# 生成物: dist/GameMacroAssistant.exe
 ```
 
-## Architecture
+## CI（GitHub Actions）
 
-### Core Components
+- トリガー: 全ブランチ `push` / `pull_request`、手動実行 `workflow_dispatch`
+- 公式アクションのみ使用: `actions/checkout@v4`, `actions/setup-python@v5`, `actions/cache@v4`, `actions/upload-artifact@v4`
+- pip キャッシュ: Linux `~/.cache/pip` / Windows `~\AppData\Local\pip\Cache`
 
-- **InputCaptureManager**: Handles global mouse and keyboard event capture
-- **Events System**: Structured event representation for mouse clicks and keyboard input
-- **Error Handling**: Unified error codes and logging system
+ジョブ構成:
+- Linux: `python3-tk` と `xvfb` を導入 → `ruff check` → `ruff format --check` → `xvfb-run -a pytest`
+- Windows: `pytest` 実行 → `pyinstaller` による `.exe` ビルド → `GameMacroAssistant-win` としてアーティファクトアップロード
 
-### Error Codes
+## アーキテクチャ（概要）
 
-The system uses structured error codes for troubleshooting:
+- 入力記録: グローバルフックでマウス／キーボードをキャプチャ、ESC で停止。
+- 画面キャプチャ: フルスクリーン対応。失敗時は Windows の GDI にフォールバック（`Err-CAP` をログ）。
+- ビジュアルエディタ: ブロック表現、ドラッグ＆ドロップ並べ替え、矩形選択、ダブルクリック編集、アンドゥ／リドゥ。
+- 実行エンジン: グローバルホットキー（例: Ctrl+Shift+F10）、画像マッチング条件、タイムアウト（`Err-TMO` ログ）、トレイ進捗表示。
+- ファイル形式: パスワード保護付き暗号化 `.gma.json`、最大 3 回のパスワード検証とエラーフィードバック。
 
-- `Err-CAP-001`: Failed to initialize input capture
-- `Err-CAP-002`: Runtime error during capture
-- `Err-CAP-003`: Permission denied for input capture
-- `Err-CAP-004`: System resources unavailable
+## トラブルシューティング
 
-### Supported Input Events
+- Linux で `tkinter` ImportError: `sudo apt-get install -y python3-tk` を実行。
+- ヘッドレス実行で GUI 関連エラー: `xvfb-run -a python -m pytest -q` を使用。
+- Windows で `pywin32` 未解決: `pip install -r requirements.txt` を再実行（環境マーカーにより Windows のみ解決）。
+- グローバル入力の権限問題: Windows では管理者権限での実行を検討。
 
-**Mouse Events:**
-- Left button clicks
-- Right button clicks  
-- Middle button clicks (scroll wheel)
-- Coordinates and timestamps
+## コントリビュート
 
-**Keyboard Events:**
-- Character keys (a-z, 0-9, symbols)
-- Space characters (properly handled)
-- Special keys (ESC for stop recording)
-- Key press and release events
-
-## Development
-
-### Project Structure
-
-```
-GameMacroAssistant/
-├── src/
-│   ├── core/
-│   │   ├── input_capture.py    # Main input capture logic
-│   │   └── events.py           # Event type definitions
-│   └── main.py                 # Application entry point
-├── tests/
-│   ├── test_input_capture.py   # Unit tests
-│   └── test_integration.py     # Integration tests
-├── requirements.txt            # Dependencies
-└── README.md                   # This file
-```
-
-### Adding New Features
-
-1. **Event Types**: Add new event types in `src/core/events.py`
-2. **Capture Logic**: Extend `InputCaptureManager` in `src/core/input_capture.py`
-3. **Tests**: Add corresponding tests in `tests/`
-4. **Documentation**: Update this README with new functionality
-
-### Code Quality
-
-Run linting and formatting:
-
-```bash
-# Format code
-black src/ tests/
-
-# Check code style  
-flake8 src/ tests/
-
-# Type checking (if using type hints)
-mypy src/
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Permission Errors (Err-CAP-003)**
-- Run as administrator on Windows
-- Check antivirus software blocking input capture
-- Verify pynput permissions
-
-**Resource Unavailable (Err-CAP-004)**
-- Close other applications using input capture
-- Restart the application
-- Check system resource usage
-
-**Installation Issues**
-- Ensure Python 3.8+ is installed
-- Use virtual environment to avoid conflicts
-- Install Visual C++ redistributables on Windows
-
-### Debug Logging
-
-Enable debug logging for detailed troubleshooting:
-
-```python
-import logging
-logging.getLogger('src.core.input_capture').setLevel(logging.DEBUG)
-```
-
-### Testing Issues
-
-**Unit Tests Failing**
-- Check Python path configuration
-- Verify all dependencies are installed
-- Run tests in virtual environment
-
-**Integration Test Issues**
-- Ensure GUI environment is available
-- Check mouse/keyboard hardware functionality
-- Verify administrator privileges
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. フォークしブランチを作成（例: `git checkout -b feat/feature-name`）
+2. 変更をコミット（`git commit -m "feat: ..."`）
+3. プッシュして PR を作成
+4. PR は CI がグリーン（DoD 満たす）であること
 
 ## 開発環境（Linux）
 
